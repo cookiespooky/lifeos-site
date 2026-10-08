@@ -1,0 +1,7 @@
+# собирается из src/ и data/ — руками не правится
+/content/
+/dist/
+/.notepub/
+/.bin/
+.DS_Store
+/dist-dev/

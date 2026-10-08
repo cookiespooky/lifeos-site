@@ -1,0 +1,16 @@
+{{- if and .Settings.cta_title (ne .Page.Type "home") }}
+<section class="band band--dark">
+  <div class="band__inner">
+    <p class="eyebrow"><span>{{ .Settings.cta_kicker }}</span></p>
+    <h2 class="band__title">{{ .Settings.cta_title }}</h2>
+    <p>{{ .Settings.cta_text }}</p>
+    <div class="actions"><a class="btn btn--primary" href="{{ .Settings.contact_url }}">{{ .Settings.cta_button }}</a></div>
+  </div>
+</section>
+{{- end }}
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <span>{{ if .Settings.site_name }}{{ .Settings.site_name }}{{ else }}Life OS{{ end }}</span>
+    <span>{{ .Settings.footer_note }}</span>
+  </div>
+</footer>

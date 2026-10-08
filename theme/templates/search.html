@@ -1,0 +1,24 @@
+<section class="page container">
+  <header class="page__head">
+    <p class="eyebrow"><span>Поиск</span></p>
+    <h1>Поиск</h1>
+  </header>
+  <form class="search-form" action="{{ .BaseURL }}/search" method="get">
+    <input type="search" name="q" value="{{ .SearchQuery }}" placeholder="Что найти" minlength="2" />
+    <button type="submit">Найти</button>
+  </form>
+  <div class="search-results" data-search-results>
+    {{- if .SearchItems }}
+    <ul>
+      {{- range .SearchItems }}
+      <li>
+        <a href="{{ $.BaseURL }}{{ .Path }}">{{ .Title }}</a>
+        {{- if .Snippet }}<p class="muted">{{ .Snippet }}</p>{{- end }}
+      </li>
+      {{- end }}
+    </ul>
+    {{- else }}
+    <p class="muted">Введите хотя бы два знака.</p>
+    {{- end }}
+  </div>
+</section>

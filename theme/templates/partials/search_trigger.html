@@ -1,0 +1,18 @@
+<div class="search-trigger">
+  <button class="search-button" type="button" data-search-open>Поиск</button>
+  <noscript>
+    <a class="search-link" href="{{ .BaseURL }}/search">Поиск</a>
+  </noscript>
+</div>
+
+<div class="search-modal" data-search-modal aria-hidden="true">
+  <div class="search-backdrop" data-search-close></div>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="Поиск">
+    <form class="search-form" action="{{ .BaseURL }}/search" method="get">
+      <input type="search" name="q" placeholder="Что найти" minlength="2" data-search-input />
+      <button type="submit">Найти</button>
+      <button type="button" class="ghost" data-search-close>Закрыть</button>
+    </form>
+    <div class="search-results" data-search-results></div>
+  </div>
+</div>

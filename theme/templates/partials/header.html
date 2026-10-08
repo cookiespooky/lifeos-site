@@ -1,0 +1,21 @@
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="logo" href="{{ .BaseURL }}/">
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><line x1="6" y1="16" x2="16" y2="6" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="16" r="4" fill="currentColor"/><circle cx="16" cy="6" r="3.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg>
+      <span>{{ if .Settings.site_name }}{{ .Settings.site_name }}{{ else }}Life OS{{ end }}</span>
+    </a>
+    {{/* Меню сайта: единственное место шаблона, которое у каждого сайта своё. */}}
+    <nav class="nav">
+      <a href="{{ .BaseURL }}/chto-vnutri/">Что внутри</a>
+      <a href="{{ .BaseURL }}/dlya/">Для кого</a>
+      <a href="{{ .BaseURL }}/kak/">Инструкции</a>
+      <a href="{{ .BaseURL }}/chto-novogo/">Что нового</a>
+    </nav>
+    <div class="header-actions">
+      {{ template "search_trigger.html" . }}
+      {{- if .Settings.contact_url }}
+      <a class="btn btn--small" href="{{ .Settings.contact_url }}">{{ .Settings.contact_label }}</a>
+      {{- end }}
+    </div>
+  </div>
+</header>

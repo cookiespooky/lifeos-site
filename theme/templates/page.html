@@ -1,0 +1,14 @@
+<article class="page container">
+  <header class="page__head">
+    {{- if .FM.kicker }}
+    <p class="eyebrow"><span>{{ .FM.kicker }}</span>{{ if .FM.badge }}<span class="badge">{{ .FM.badge }}</span>{{ end }}</p>
+    {{- end }}
+    <h1>{{ .Page.Title }}</h1>
+    {{- if .Page.Description }}
+    <p class="deck">{{ .Page.Description }}</p>
+    {{- end }}
+  </header>
+  <div class="prose">
+    {{ .Body }}
+  </div>
+</article>

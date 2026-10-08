@@ -1,0 +1,64 @@
+# Сайт Life OS: описание продукта. Содержание собирает scripts/gen.py из src/ и data/components.json — content/ руками не правится.
+site:
+  id: lifeos
+  base_url: "https://lifeos.antonlozhkin.ru/"   # выложен 8.10: scripts/deploy.sh сверяет этот адрес со своим доменом
+  title: "Life OS"
+  description: "Life OS — рабочая система для своих дел"
+  default_og_image: ""
+  media_base_url: "https://lifeos.antonlozhkin.ru/media/"
+  host: 127.0.0.1
+
+runtime:
+  mode: "prod"
+  dev:
+    base_url: "http://127.0.0.1:8085/"
+    media_base_url: "http://127.0.0.1:8085/media/"
+
+content:
+  source: "local"
+  local_dir: "./content"
+
+markdown:
+  html_policy: "unsafe"   # страницы собирает scripts/gen.py из своих же текстов: блоки приходят готовой разметкой
+
+og_type_by_type:
+  home: "website"
+  page: "website"
+  part: "article"
+  use: "article"
+  howto: "article"
+
+paths:
+  file_root: ./.notepub
+  artifacts_dir: ./.notepub/artifacts
+  snapshot_file: ./.notepub/snapshot/objects.json
+  cache_root: ./.notepub/cache
+
+theme:
+  dir: .
+  name: "theme"
+  templates_subdir: templates
+  assets_subdir: assets
+
+server:
+  listen: "127.0.0.1:8085"
+
+rules_path: ./rules.yaml
+
+# Слова шаблона, которые у каждого сайта свои: шапка, подвал, тёмная полоса внизу внутренних страниц.
+settings:
+  site_name: "Life OS"
+  contact_url: "https://t.me/cookiespooky"
+  contact_label: "Написать автору"
+  cta_kicker: "С чего начать"
+  cta_title: "Расскажите, какая работа у вас главная."
+  cta_text: "Автор ответит, подойдёт ли система."
+  cta_button: "Написать в Telegram"
+  footer_note: "Страницы собираются из описаний самой системы"
+
+robots:
+  disallow: []
+
+cache:
+  html_ttl_seconds: 600
+  stale_if_error_seconds: 604800
