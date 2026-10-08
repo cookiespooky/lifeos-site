@@ -12,7 +12,8 @@ theme/assets/styles.css, ни одного стиля в строке. Вид м
 Каждый блок — подряд идущие строки без пустых: так движок принимает его как один кусок разметки.
 
 Метки в src/: {{uses}} — плитки «Для кого», {{groups}} — колонки частей, {{parts}} — части одного варианта,
-{{howtos}} — инструкции, {{example}} — схема «одно входящее → несколько записей» (за меткой список). Формат главной —
+{{howtos}} — инструкции, {{usetabs}} — «Для кого» вкладками с примерами, {{example}} — пример разговором: сообщение и
+следующим сообщением карточки того, что система записала (за меткой список; пишется на странице варианта). Формат главной —
 в README.md. Только stdlib.
 """
 import html, json, math, os, re, shutil, sys
@@ -104,37 +105,59 @@ def cols(groups, by_group):
     return '\n'.join(out + ['</div>'])
 
 
+def tabs(name, items):
+    """Вкладки без скрипта: items — [(подпись, разметка панели)]. Переключатели стоят перед полосой подписей и панелями —
+    на этом держатся правила в styles.css; полоса подписей на узком экране прилипает к верху, пока видна её секция."""
+    if len(items) > 8:
+        errors.append(f'вкладок «{name}» больше восьми — в styles.css правил на столько нет')
+    radios = [f'<input class="tabs__radio" type="radio" name="{name}" id="{name}-{i}" aria-label="{esc(label)}"{" checked" if i == 1 else ""}>' for i, (label, _) in enumerate(items, 1)]
+    bar = '<div class="tabs__bar">' + ''.join(f'<label class="tabs__tab" for="{name}-{i}">{esc(label)}</label>' for i, (label, _) in enumerate(items, 1)) + '</div>'
+    return '\n'.join(['<div class="tabs">'] + radios + [bar] + [f'<section class="tabs__panel">{panel}</section>' for _, panel in items] + ['</div>'])
+
+
 def chains(text, name):
-    """#### Название / абзац / нумерованный список «Шаг — пояснение» → вкладки без скрипта."""
-    blocks = [b for b in re.split(r'^#### ', text, flags=re.M) if b.strip()]
-    tabs, panels = [], []
-    for i, b in enumerate(blocks, 1):
+    """#### Название / абзац / нумерованный список «Шаг — пояснение» → вкладки."""
+    items = []
+    for b in [b for b in re.split(r'^#### ', text, flags=re.M) if b.strip()]:
         title, _, rest = b.partition('\n')
         steps = re.findall(r'^\d+\. (.+)$', rest, re.M)
         para = ' '.join(l.strip() for l in rest.split('\n') if l.strip() and not re.match(r'\d+\. ', l))
         if not steps or not para:
             errors.append(f'{name}: цепочка «{title.strip()}» — нужен абзац и нумерованный список шагов')
-        tabs.append(f'<input class="chains__radio" type="radio" name="chain" id="chain-{i}"{" checked" if i == 1 else ""}><label class="chains__tab" for="chain-{i}">{esc(title.strip())}</label>')
         li = []
-        for n, s in enumerate(steps, 1):
-            head, _, note = s.partition(' — ')
+        for n, st in enumerate(steps, 1):
+            head, _, note = st.partition(' — ')
             li.append(f'<li class="step"><span class="step__num">{n:02d}</span><div class="step__title">{esc(typo(head))}</div><div class="step__text">{esc(note)}</div></li>')
-        panels.append(f'<div class="chains__panel"><ol class="steps">{"".join(li)}</ol><p class="chains__text">{esc(para)}</p></div>')
-    if len(blocks) > 8:
-        errors.append(f'{name}: цепочек больше восьми — в styles.css вкладок на столько нет')
-    return '\n'.join(['<div class="chains">'] + tabs + panels + ['</div>'])
+        items.append((title.strip(), f'<ol class="steps">{"".join(li)}</ol><p class="tabs__text">{esc(para)}</p>'))
+    return tabs('chain', items)
 
 
 def example(lines, name):
-    """- Что пришло: текст / с отступом — что из этого записано."""
+    """Пример разговором: «- Что пришло: текст» — сообщение, вложенные строки под ним — следующим сообщением то, что
+    система из этого записала или ответила, карточками."""
     top = [l[2:] for l in lines if l.startswith('- ')]
     sub = [l.strip()[2:] for l in lines if re.match(r'\s+- ', l)]
     if len(top) != 1 or not sub:
         errors.append(f'{name}: после {{{{example}}}} — одна строка списка и вложенные под ней')
         return ''
-    cell = lambda s: '<div class="example__label">{}</div><div class="example__what">{}</div>'.format(*(esc(x.strip()) for x in (s.partition(': ')[0], s.partition(': ')[2])))
-    return '\n'.join(['<div class="example">', f'<div class="example__from">{cell(top[0])}</div>', '<div class="example__arrow" aria-hidden="true"></div>',
-                      '<ul class="example__to">'] + [f'<li class="example__item">{cell(s)}</li>' for s in sub] + ['</ul>', '</div>'])
+    cell = lambda st: '<div class="chat__label">{}</div><div class="chat__what">{}</div>'.format(*(esc(x.strip()) for x in (st.partition(': ')[0], st.partition(': ')[2])))
+    return ('<div class="chat">' + f'<div class="chat__msg">{cell(top[0])}</div>' + '<div class="chat__reply"><div class="chat__from">Life OS</div><ul class="chat__cards">'
+            + ''.join(f'<li class="chat__card">{cell(st)}</li>' for st in sub) + '</ul></div></div>')
+
+
+EXAMPLE = re.compile(r'^\{\{example\}\}\n((?:[ \t]*- .*\n?)+)', re.M)
+
+
+def use_tabs(uses, examples):
+    """«Для кого» вкладками: о какой работе речь, ссылка на страницу варианта и его пример разговором."""
+    items = []
+    for _, fm, _, name in uses:
+        text = (f'<div class="usecase__text"><h3 class="usecase__title">{esc(typo(fm["title"]))}</h3><p>{esc(fm["description"])}</p>'
+                f'<a class="more" href="/dlya/{fm["slug"]}/">Подробнее <span aria-hidden="true">→</span></a></div>')
+        if name not in examples:
+            errors.append(f'{name}: нет примера — {{{{example}}}} и список под ним')
+        items.append((fm['use'], f'<div class="usecase">{text}{examples.get(name, "")}</div>'))
+    return tabs('use', items)
 
 
 def actions(links):
@@ -220,7 +243,7 @@ def home(fm, body, name, marks, graph_html):
     # над ним, выбором слева и описанием выбранного справа.
     out = ['\n'.join(['<section class="hero">', '<div class="hero__inner">', '<div class="hero__text">',
                       f'<p class="eyebrow"><span>{esc(fm.get("kicker", ""))}</span></p>', f'<h1 class="hero__title">{esc(typo(fm.get("hero_title", "")))}</h1>',
-                      f'<p class="hero__lead">{esc(lead)}</p>', actions(buttons), '</div>', graph_html, '</div>', '</section>'])]
+                      f'<p class="hero__lead">{esc(lead)}</p>', *([actions(buttons)] if buttons else []), '</div>', graph_html, '</div>', '</section>'])]
     for n, chunk in enumerate(chunks[1:], 1):
         headline, _, rest = chunk.partition('\n')
         m = re.match(r'(.*?)\s*(?:\{([^}]*)\})?\s*$', headline)
@@ -244,7 +267,7 @@ def home(fm, body, name, marks, graph_html):
             elif len(lines) == 1 and LINK.fullmatch(block.strip()):
                 t, u = LINK.fullmatch(block.strip()).groups()
                 block = f'<p><a class="more" href="{esc(u)}">{esc(t)}</a></p>'
-            elif block.strip() in ('{{uses}}', '{{groups}}'):
+            elif block.strip() in ('{{uses}}', '{{groups}}', '{{usetabs}}'):
                 block = marks[block.strip()[2:-2]]
             blocks.append(block)
         head = [f'<section class="{" ".join(cls)}"' + (f' id="{sid}"' if sid else '') + '>', '<div class="band__inner">', f'<p class="eyebrow"><span>{esc(label)}</span></p>']
@@ -277,7 +300,14 @@ def main():
     uses.sort(key=lambda u: (u[0], u[1].get('slug', '')))
     howtos.sort(key=lambda u: (u[0], u[1].get('slug', '')))
 
+    # Пример варианта написан на его странице и стоит там же; главная берёт его во вкладку «Для кого».
+    examples = {}
+    for _, _, body, name in uses:
+        m = EXAMPLE.search(body)
+        if m:
+            examples[name] = example(m.group(1).rstrip('\n').split('\n'), name)
     marks = {
+        'usetabs': use_tabs(uses, examples),
         'groups': cols(data['groups'], by_group),
         'uses': tiles(uses),
         'howtos': rows_dated([(None, fm['title'], f'/kak/{fm["slug"]}/', fm['description']) for _, fm, _, _ in howtos]) if howtos else '',
@@ -295,6 +325,7 @@ def main():
             if not mine:
                 errors.append(f'{name}: в реестре нет компонентов для «{fm.get("use")}»')
             local['parts'] = rows_parts(mine)
+        body = EXAMPLE.sub(lambda m: example(m.group(1).rstrip('\n').split('\n'), name) + '\n', body)
         body = re.sub(r'\{\{(\w+)\}\}', lambda m: local.get(m.group(1)) if m.group(1) in local else errors.append(f'{name}: неизвестная метка {m.group(0)}') or '', body)
         kicker = kickers.get(fm.get('type'), '') + (f' · {fm["use"]}' if fm.get('use') else '')
         files[name] = page(fm.get('type', 'page'), fm.get('slug', ''), fm.get('title', ''), fm.get('description', ''), body,
