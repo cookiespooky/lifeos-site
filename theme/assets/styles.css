@@ -88,16 +88,16 @@ h1, h2, h3, h4, p, ul, ol { margin: 0; }
 .band--dark .btn--primary { background: var(--dark-ink); color: var(--ink); border-color: var(--dark-ink); }
 .band--dark .btn--primary:hover { background: var(--surface); color: var(--accent); }
 
-/* ---------- первый экран ---------- */
+/* ---------- первый экран: одна колонка — текст по центру, под ним граф во всю ширину ---------- */
 .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
-.hero::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.7;
+.hero::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.6;
   background-image: radial-gradient(var(--line-2) 1px, transparent 1px); background-size: var(--dot-grid) var(--dot-grid);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%); mask-image: linear-gradient(90deg, transparent, #000 40%); }
-.hero__inner { position: relative; max-width: calc(var(--page) + 2 * var(--gutter)); margin: 0 auto; padding: 64px var(--gutter) 48px; display: flex; flex-wrap: wrap; align-items: center; gap: 40px; }
-.hero__text { flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 26px; }
-.hero__title { font-size: var(--t-hero); line-height: 1.05; letter-spacing: -0.035em; font-weight: var(--w-medium); text-wrap: balance; }
-.hero__lead { font-size: var(--t-lead); line-height: 1.55; color: var(--ink-2); max-width: 520px; text-wrap: pretty; }
-.hero__graph { flex: 1 1 520px; min-width: 0; }
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 45%); mask-image: linear-gradient(180deg, transparent, #000 45%); }
+.hero__inner { position: relative; max-width: calc(var(--page) + 2 * var(--gutter)); margin: 0 auto; padding: 72px var(--gutter) 56px; }
+.hero__text { display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center; }
+.hero__title { font-size: var(--t-hero); line-height: 1.05; letter-spacing: -0.035em; font-weight: var(--w-medium); max-width: 900px; text-wrap: balance; }
+.hero__lead { font-size: var(--t-lead); line-height: 1.55; color: var(--ink-2); max-width: 600px; text-wrap: pretty; }
+.hero .actions { justify-content: center; }
 
 /* ---------- кнопки ---------- */
 .actions { display: flex; flex-wrap: wrap; gap: 12px; }
@@ -191,8 +191,26 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
   .example__arrow::after { right: -4px; top: auto; bottom: 0; transform: rotate(135deg); }
 }
 
-/* ---------- граф частей ---------- */
-.graph svg { display: block; width: 100%; height: auto; overflow: visible; }
+/* ---------- граф частей: фильтры сверху, выбор слева, схема в центре, описание выбранного справа ---------- */
+.graph { margin-top: 48px; }
+.graph__label { display: block; font: var(--w-normal) var(--t-label)/1.4 var(--font-mono); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
+.graph__filters { flex-direction: column; align-items: center; gap: 12px; }
+.graph__filters .chips { justify-content: center; }
+.graph__stage { display: grid; grid-template-columns: minmax(0, 230px) minmax(0, 560px) minmax(0, 270px); justify-content: space-between; align-items: center; gap: 32px; margin-top: 16px; }
+.graph__side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.graph__picks { list-style: none; padding: 0; display: flex; flex-direction: column; }
+.graph__pick { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: var(--t-small); color: var(--ink-2); transition: color .2s; }
+.graph__picks li:last-child .graph__pick { border-bottom: 1px solid var(--line); }
+.graph__pick:hover, .graph__pick.is-on { color: var(--ink); }
+.graph__pick.is-on { font-weight: var(--w-medium); }
+.graph__count { font: var(--w-normal) var(--t-label)/1.9 var(--font-mono); color: var(--ink-3); }
+.graph__side--result { align-self: center; min-height: 260px; }
+.graph__caption { font-size: var(--t-small); line-height: 1.55; color: var(--ink-2); }
+.graph__caption strong { display: block; margin-bottom: 6px; font-size: var(--t-h3); line-height: 1.3; color: var(--ink); font-weight: var(--w-medium); }
+.graph__result { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--t-small); }
+.graph__result a { color: var(--ink); border-bottom: 1px solid var(--line-2); }
+.graph__result a:hover { border-color: var(--ink); }
+.graph__canvas svg { display: block; width: 100%; height: auto; overflow: visible; }
 .graph__edge { fill: none; stroke: var(--line-2); stroke-width: 1; transition: stroke .3s, opacity .3s; }
 .graph__ring { fill: none; stroke: var(--line-2); stroke-dasharray: 3 5; }
 .graph__core { fill: var(--ink); }
@@ -203,15 +221,12 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 .graph__part circle { fill: var(--surface); stroke: var(--accent); stroke-width: 1.5; transition: fill .2s; }
 .graph__part--soon circle { stroke-dasharray: 2 2; stroke: var(--ink-3); }
 .graph__part .graph__hit, .graph__group .graph__hit { fill: transparent; stroke: none; }
-.graph__part:hover circle, .graph__part.is-on circle { fill: var(--accent); }
+.graph__part:hover circle:not(.graph__hit), .graph__part.is-on circle:not(.graph__hit) { fill: var(--accent); }
 .graph__group, .graph__part, .graph__edge { transition: opacity .3s; }
 .graph.is-dim .graph__group:not(.is-on), .graph.is-dim .graph__part:not(.is-on), .graph.is-dim .graph__edge:not(.is-on) { opacity: 0.25; }
 .graph .graph__edge.is-on { stroke: var(--accent); }
 .graph__pulse { fill: var(--accent-soft); }
-.graph__foot { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
-.graph__caption { min-height: 3.1em; font-size: var(--t-small); line-height: 1.55; color: var(--ink-2); }
-.graph__caption strong { color: var(--ink); font-weight: var(--w-medium); }
-.graph__legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font: var(--w-normal) var(--t-label)/1.4 var(--font-mono); color: var(--ink-3); }
+.graph__legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font: var(--w-normal) var(--t-label)/1.4 var(--font-mono); color: var(--ink-3); }
 .graph__legend span { display: flex; align-items: center; gap: 8px; }
 .graph__legend i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--accent); background: var(--surface); }
 .graph__legend .is-group { background: var(--accent); }
@@ -219,6 +234,15 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 .js-only { display: none; }
 .js .js-only { display: flex; }
 @media (prefers-reduced-motion: reduce) { .graph__pulse { display: none; } html { scroll-behavior: auto; } }
+@media (max-width: 960px) {
+  .hero__inner { padding-top: 48px; padding-bottom: 40px; }
+  .graph__stage { grid-template-columns: 1fr; gap: 24px; }
+  .graph__canvas { order: 1; max-width: 520px; width: 100%; margin: 0 auto; }
+  .graph__side--result { order: 2; min-height: 0; }
+  .graph__side:not(.graph__side--result) { order: 3; }
+  .graph__group text { font-size: 20px; }
+  .graph__core-label { font-size: 19px; }
+}
 
 /* ---------- поиск ---------- */
 .search-modal { position: fixed; inset: 0; z-index: 20; display: none; }
@@ -234,4 +258,3 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 .search-results li { padding: 12px 0; border-top: 1px solid var(--line); }
 .search-results a { font-weight: var(--w-medium); }
 .search-results p { font-size: var(--t-small); margin-top: 4px; }
-@media (max-width: 720px) { .graph__group text { font-size: 20px; } .graph__core-label { font-size: 19px; } }

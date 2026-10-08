@@ -86,33 +86,46 @@
   wireSearchInput();
 })();
 
-// Граф частей: наведение на группу, часть или вариант использования подсвечивает связанное и пишет подпись.
+// Граф частей: фильтр сверху («что нужно, чтобы работали…»), группа слева или точка на схеме подсвечивают связанное,
+// а справа пишется, что выбрано, и ссылки на выбранные части. Нажатие на фильтр или группу закрепляет выбор.
 // Без скрипта граф остаётся картинкой со ссылками.
 (function () {
   var graph = document.querySelector('[data-graph]');
   if (!graph) return;
   var caption = graph.querySelector('[data-graph-caption]');
+  var kind = graph.querySelector('[data-graph-kind]');
+  var result = graph.querySelector('[data-graph-result]');
   var parts = graph.querySelectorAll('.graph__part');
   var groups = graph.querySelectorAll('.graph__group');
   var edges = graph.querySelectorAll('.graph__edge');
   var chips = graph.querySelectorAll('[data-use]');
+  var picks = graph.querySelectorAll('.graph__pick');
   var pinned = null;
 
-  function say(title, text) {
+  function say(label, title, text, list) {
+    kind.textContent = label || kind.getAttribute('data-default');
     caption.textContent = '';
+    result.textContent = '';
     if (!title) { caption.textContent = caption.getAttribute('data-default'); return; }
     var b = document.createElement('strong');
     b.textContent = title;
     caption.appendChild(b);
-    if (text) caption.appendChild(document.createTextNode(' — ' + text));
+    if (text) caption.appendChild(document.createTextNode(text));
+    (list || []).forEach(function (p) {
+      var li = document.createElement('li'), a = document.createElement('a');
+      a.href = p.getAttribute('href');
+      a.textContent = p.getAttribute('data-title');
+      li.appendChild(a);
+      result.appendChild(li);
+    });
   }
 
   function show(match) {
-    var on = {}, onGroups = {};
+    var on = {}, onGroups = {}, list = [];
     parts.forEach(function (p) {
       var hit = match && match(p);
       p.classList.toggle('is-on', !!hit);
-      if (hit) { on[p.getAttribute('data-part')] = 1; onGroups[p.getAttribute('data-group')] = 1; }
+      if (hit) { on[p.getAttribute('data-part')] = 1; onGroups[p.getAttribute('data-group')] = 1; list.push(p); }
     });
     groups.forEach(function (g) { g.classList.toggle('is-on', !!onGroups[g.getAttribute('data-group')]); });
     edges.forEach(function (e) {
@@ -120,20 +133,33 @@
       e.classList.toggle('is-on', part ? !!on[part] : !!onGroups[e.getAttribute('data-group')]);
     });
     graph.classList.toggle('is-dim', !!match);
+    return list;
+  }
+
+  function mark(el) {
+    chips.forEach(function (c) { c.classList.toggle('is-on', c === el); });
+    picks.forEach(function (c) { c.classList.toggle('is-on', c === el); });
   }
 
   function useChip(chip) {
     var use = chip.getAttribute('data-use');
-    chips.forEach(function (c) { c.classList.toggle('is-on', c === chip); });
-    show(function (p) { return (' ' + p.getAttribute('data-uses') + ' ').indexOf(' ' + use + ' ') >= 0; });
-    say(chip.getAttribute('data-caption'), 'подсвечены части, которые для этого нужны');
+    mark(chip);
+    var list = show(function (p) { return (' ' + p.getAttribute('data-uses') + ' ').indexOf(' ' + use + ' ') >= 0; });
+    say('Для чего', chip.getAttribute('data-caption'), 'Для этого нужны:', list);
+  }
+
+  function useGroup(id) {
+    var pick = graph.querySelector('.graph__pick[data-group="' + id + '"]');
+    mark(pick);
+    var list = show(function (p) { return p.getAttribute('data-group') === id; });
+    say('Группа', pick.getAttribute('data-caption'), 'В неё входят:', list);
   }
 
   function rest() {
-    if (pinned) return useChip(pinned);
-    chips.forEach(function (c) { c.classList.remove('is-on'); });
+    if (pinned) return pinned.hasAttribute('data-use') ? useChip(pinned) : useGroup(pinned.getAttribute('data-group'));
+    mark(null);
     show(null);
-    say(null);
+    say();
   }
 
   function hover(el, enter) {
@@ -143,22 +169,21 @@
     el.addEventListener('blur', rest);
   }
 
+  function pin(el) {
+    el.addEventListener('click', function (e) {
+      e.preventDefault();
+      pinned = pinned === el ? null : el;
+      rest();
+    });
+  }
+
   parts.forEach(function (p) {
     hover(p, function () {
       show(function (x) { return x === p; });
-      say(p.getAttribute('data-title'), p.getAttribute('data-caption'));
+      say('Часть', p.getAttribute('data-title'), p.getAttribute('data-caption'));
     });
   });
-  groups.forEach(function (g) {
-    hover(g, function () {
-      var id = g.getAttribute('data-group');
-      show(function (x) { return x.getAttribute('data-group') === id; });
-      var text = g.getAttribute('data-caption'), cut = text.indexOf(': ');
-      say(text.slice(0, cut), text.slice(cut + 2));
-    });
-  });
-  chips.forEach(function (chip) {
-    hover(chip, function () { useChip(chip); });
-    chip.addEventListener('click', function () { pinned = pinned === chip ? null : chip; rest(); });
-  });
+  groups.forEach(function (g) { hover(g, function () { useGroup(g.getAttribute('data-group')); }); });
+  picks.forEach(function (pick) { hover(pick, function () { useGroup(pick.getAttribute('data-group')); }); pin(pick); });
+  chips.forEach(function (chip) { hover(chip, function () { useChip(chip); }); pin(chip); });
 })();

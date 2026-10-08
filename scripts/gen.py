@@ -179,19 +179,25 @@ def graph(data, by_group, uses):
         pulses.append(f'<circle class="graph__pulse" r="2.5" opacity="0"><animateMotion dur="{dur}s" begin="{round(gi * 0.8, 1)}s" repeatCount="indefinite" path="M{px} {py} L{gx} {gy} L{CX} {CY}"/>'
                       f'<animate attributeName="opacity" dur="{dur}s" begin="{round(gi * 0.8, 1)}s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.15;0.8;1"/></circle>')
     n_parts, n_groups = len(data['components']), len(groups)
-    lead = f'{plural(n_groups, "группа", "группы", "групп")}, {plural(n_parts, "часть", "части", "частей")}. Точка — часть системы: наведите, чтобы узнать, что она делает, нажмите — откроется её страница.'
+    lead = 'Точка — часть системы. Выберите группу или то, для чего система нужна: здесь появится, что это и из чего состоит.'
     soon = any(c['status'] != 'работает' for c in data['components'])
     chips = ''.join(f'<button class="chip" type="button" data-use="{esc(fm["use"])}" data-caption="{esc(fm["title"])}">{esc(fm["use"])}</button>' for _, fm, _, _ in uses)
+    picks = ''.join(f'<li><a class="graph__pick" href="/chto-vnutri/#g{i}" data-group="g{i}" data-caption="{esc(g)}"><span>{esc(g)}</span><span class="graph__count">{len(by_group[g])}</span></a></li>'
+                    for i, g in enumerate(groups, 1))
+    count = f'{plural(n_groups, "группа", "группы", "групп")}, {plural(n_parts, "часть", "части", "частей")}'
     return '\n'.join([
         '<div class="graph" data-graph>',
-        f'<svg viewBox="{CX - R2 - PAD} {CY - R2 - PAD} {2 * (R2 + PAD)} {2 * (R2 + PAD)}" role="img" aria-label="Схема: {esc(plural(n_groups, "группа", "группы", "групп"))} и {esc(plural(n_parts, "часть", "части", "частей"))} системы вокруг общего центра">',
+        f'<div class="graph__filters js-only"><span class="graph__label">Для чего</span><div class="chips">{chips}</div></div>',
+        '<div class="graph__stage">',
+        f'<div class="graph__side"><span class="graph__label">{esc(count)}</span><ul class="graph__picks">{picks}</ul>',
+        '<div class="graph__legend"><span><i class="is-group"></i>группа</span><span><i></i>часть</span>' + ('<span><i class="is-soon"></i>в разработке</span>' if soon else '') + '</div></div>',
+        f'<div class="graph__canvas"><svg viewBox="{CX - R2 - PAD} {CY - R2 - PAD} {2 * (R2 + PAD)} {2 * (R2 + PAD)}" role="img" aria-label="Схема: {esc(count)} системы вокруг общего центра">',
         *edges,
         f'<circle class="graph__ring" cx="{CX}" cy="{CY}" r="56"/><circle class="graph__core" cx="{CX}" cy="{CY}" r="40"/><text class="graph__core-label" x="{CX}" y="{CY + 5}">Life OS</text>',
-        *pulses, *nodes, '</svg>',
-        '<div class="graph__foot">',
+        *pulses, *nodes, '</svg></div>',
+        '<div class="graph__side graph__side--result" aria-live="polite"><span class="graph__label" data-graph-kind data-default="Что выбрано">Что выбрано</span>',
         f'<p class="graph__caption" data-graph-caption data-default="{esc(lead)}">{esc(lead)}</p>',
-        f'<div class="chips js-only" aria-label="Показать части, нужные для">{chips}</div>',
-        '<div class="graph__legend"><span><i class="is-group"></i>группа</span><span><i></i>часть</span>' + ('<span><i class="is-soon"></i>в разработке</span>' if soon else '') + '</div>',
+        '<ul class="graph__result" data-graph-result></ul></div>',
         '</div>', '</div>'])
 
 
@@ -210,9 +216,11 @@ def home(fm, body, name, marks, graph_html):
     for key in ('kicker', 'hero_title'):
         if not fm.get(key):
             errors.append(f'{name}: в свойствах нет {key}')
+    # Первый экран — одной колонкой: подпись, заголовок, подзаголовок, кнопки; ниже граф во всю ширину с фильтрами
+    # над ним, выбором слева и описанием выбранного справа.
     out = ['\n'.join(['<section class="hero">', '<div class="hero__inner">', '<div class="hero__text">',
                       f'<p class="eyebrow"><span>{esc(fm.get("kicker", ""))}</span></p>', f'<h1 class="hero__title">{esc(typo(fm.get("hero_title", "")))}</h1>',
-                      f'<p class="hero__lead">{esc(lead)}</p>', actions(buttons), '</div>', '<div class="hero__graph">', graph_html, '</div>', '</div>', '</section>'])]
+                      f'<p class="hero__lead">{esc(lead)}</p>', actions(buttons), '</div>', graph_html, '</div>', '</section>'])]
     for n, chunk in enumerate(chunks[1:], 1):
         headline, _, rest = chunk.partition('\n')
         m = re.match(r'(.*?)\s*(?:\{([^}]*)\})?\s*$', headline)
