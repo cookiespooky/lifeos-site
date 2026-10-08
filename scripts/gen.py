@@ -156,7 +156,7 @@ def use_tabs(uses, examples):
                 f'<a class="more" href="/dlya/{fm["slug"]}/">Подробнее <span aria-hidden="true">→</span></a></div>')
         if name not in examples:
             errors.append(f'{name}: нет примера — {{{{example}}}} и список под ним')
-        items.append((fm['use'], f'<div class="usecase">{text}{examples.get(name, "")}</div>'))
+        items.append((fm['use'], f'<div class="usecase">{text}<div class="frame"><div class="frame__label">Ситуация</div>{examples.get(name, "")}</div></div>'))
     return tabs('use', items)
 
 
@@ -186,7 +186,7 @@ def graph(data, by_group, uses):
         else:
             lx, ly, anchor = gx, gy + (32 if sin > 0 else -20), "middle"
         names = ', '.join(c['title'] for c in parts)
-        nodes.append(f'<a class="graph__group" href="/chto-vnutri/#g{gi}" data-group="g{gi}" data-caption="{esc(g)}: {esc(names)}.">'
+        nodes.append(f'<a class="graph__group" href="/chto-vnutri/#g{gi}" data-group="g{gi}" data-node="g{gi}" data-x="{gx}" data-y="{gy}" data-title="{esc(g)}" data-caption="{esc(plural(len(parts), "часть", "части", "частей"))}: {esc(names)}.">'
                      f'<circle class="graph__halo" cx="{gx}" cy="{gy}" r="15"/><circle cx="{gx}" cy="{gy}" r="7"/>'
                      f'<text x="{round(lx, 1)}" y="{round(ly, 1)}" text-anchor="{anchor}">{esc(g)}</text><circle class="graph__hit" cx="{gx}" cy="{gy}" r="22"/></a>')
         for c, pa in zip(parts, angles):
@@ -194,7 +194,7 @@ def graph(data, by_group, uses):
             edges.append(f'<line class="graph__edge" data-group="g{gi}" data-part="{c["id"]}" x1="{gx}" y1="{gy}" x2="{px}" y2="{py}"/>')
             soon = '' if c['status'] == 'работает' else ' graph__part--soon'
             state = '' if c['status'] == 'работает' else f' ({c["status"]})'
-            nodes.append(f'<a class="graph__part{soon}" href="{part_url(c)}" data-part="{c["id"]}" data-group="g{gi}" data-uses="{esc(" ".join(c["for"]))}" '
+            nodes.append(f'<a class="graph__part{soon}" href="{part_url(c)}" data-part="{c["id"]}" data-node="{c["id"]}" data-x="{px}" data-y="{py}" data-group="g{gi}" data-uses="{esc(" ".join(c["for"]))}" '
                          f'data-title="{esc(c["title"] + state)}" data-caption="{esc(c["summary"])}"><title>{esc(c["title"] + state)}</title>'
                          f'<circle cx="{px}" cy="{py}" r="5.5"/><circle class="graph__hit" cx="{px}" cy="{py}" r="16"/></a>')
         px, py = pt(R2, angles[0])
@@ -202,26 +202,36 @@ def graph(data, by_group, uses):
         pulses.append(f'<circle class="graph__pulse" r="2.5" opacity="0"><animateMotion dur="{dur}s" begin="{round(gi * 0.8, 1)}s" repeatCount="indefinite" path="M{px} {py} L{gx} {gy} L{CX} {CY}"/>'
                       f'<animate attributeName="opacity" dur="{dur}s" begin="{round(gi * 0.8, 1)}s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.15;0.8;1"/></circle>')
     n_parts, n_groups = len(data['components']), len(groups)
-    lead = 'Точка — часть системы. Выберите группу или то, для чего система нужна: здесь появится, что это и из чего состоит.'
+    count = f'{plural(n_groups, "группа", "группы", "групп")}, {plural(n_parts, "часть", "части", "частей")}'
+    lead = f'{count[0].upper() + count[1:]}. Нажмите на точку — рядом появится, что это; сверху можно выбрать, для чего система нужна.'
     soon = any(c['status'] != 'работает' for c in data['components'])
     chips = ''.join(f'<button class="chip" type="button" data-use="{esc(fm["use"])}" data-caption="{esc(fm["title"])}">{esc(fm["use"])}</button>' for _, fm, _, _ in uses)
-    picks = ''.join(f'<li><a class="graph__pick" href="/chto-vnutri/#g{i}" data-group="g{i}" data-caption="{esc(g)}"><span>{esc(g)}</span><span class="graph__count">{len(by_group[g])}</span></a></li>'
-                    for i, g in enumerate(groups, 1))
-    count = f'{plural(n_groups, "группа", "группы", "групп")}, {plural(n_parts, "часть", "части", "частей")}'
+    # Подробное описание каждой точки лежит под графом и открывается по ссылке «Подробнее» из пузыря (правило :target).
+    info = []
+    for gi, g in enumerate(groups, 1):
+        rows = ''.join(f'<li><a href="{part_url(c)}">{esc(c["title"])}</a>{badge(c)}<span>{esc(c["summary"])}</span></li>' for c in by_group[g])
+        info.append(f'<article class="graph__info" id="node-g{gi}"><p class="graph__label">Группа</p><h3>{esc(g)}</h3><ul class="graph__parts">{rows}</ul>'
+                    f'<a class="more" href="/chto-vnutri/#g{gi}">Вся группа <span aria-hidden="true">→</span></a></article>')
+        for c in by_group[g]:
+            how = f'<div><p class="graph__label">Как работает</p><p>{esc(c["how"])}</p></div>' if c['how'] else ''
+            human = f'<div><p class="graph__label">Что делает человек</p><p>{esc(c["human"])}</p></div>' if c['human'] else ''
+            info.append(f'<article class="graph__info" id="node-{c["id"]}"><p class="graph__label">{esc(g)}{badge(c)}</p><h3>{esc(c["title"])}</h3><p class="graph__sum">{esc(c["summary"])}</p>'
+                        f'<div class="graph__more">{how}{human}</div><a class="more" href="{part_url(c)}">Открыть страницу <span aria-hidden="true">→</span></a></article>')
     return '\n'.join([
         '<div class="graph" data-graph>',
         f'<div class="graph__filters js-only"><span class="graph__label">Для чего</span><div class="chips">{chips}</div></div>',
         '<div class="graph__stage">',
-        f'<div class="graph__side"><span class="graph__label">{esc(count)}</span><ul class="graph__picks">{picks}</ul>',
-        '<div class="graph__legend"><span><i class="is-group"></i>группа</span><span><i></i>часть</span>' + ('<span><i class="is-soon"></i>в разработке</span>' if soon else '') + '</div></div>',
         f'<div class="graph__canvas"><svg viewBox="{CX - R2 - PAD} {CY - R2 - PAD} {2 * (R2 + PAD)} {2 * (R2 + PAD)}" role="img" aria-label="Схема: {esc(count)} системы вокруг общего центра">',
         *edges,
         f'<circle class="graph__ring" cx="{CX}" cy="{CY}" r="56"/><circle class="graph__core" cx="{CX}" cy="{CY}" r="40"/><text class="graph__core-label" x="{CX}" y="{CY + 5}">Life OS</text>',
-        *pulses, *nodes, '</svg></div>',
-        '<div class="graph__side graph__side--result" aria-live="polite"><span class="graph__label" data-graph-kind data-default="Что выбрано">Что выбрано</span>',
+        *pulses, *nodes, '</svg><div class="graph__bubble" data-graph-bubble hidden></div></div>',
+        '<div class="graph__side" aria-live="polite"><span class="graph__label" data-graph-kind data-default="Что на схеме">Что на схеме</span>',
         f'<p class="graph__caption" data-graph-caption data-default="{esc(lead)}">{esc(lead)}</p>',
-        '<ul class="graph__result" data-graph-result></ul></div>',
-        '</div>', '</div>'])
+        '<ul class="graph__result" data-graph-result></ul>',
+        '<div class="graph__legend"><span><i class="is-group"></i>группа</span><span><i></i>часть</span>' + ('<span><i class="is-soon"></i>в разработке</span>' if soon else '') + '</div></div>',
+        '</div>',
+        '<div class="graph__details">', *info, '</div>',
+        '</div>'])
 
 
 # ---------- главная ----------

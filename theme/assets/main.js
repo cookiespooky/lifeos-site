@@ -86,12 +86,14 @@
   wireSearchInput();
 })();
 
-// Граф частей: фильтр сверху («что нужно, чтобы работали…»), группа слева или точка на схеме подсвечивают связанное,
-// а справа пишется, что выбрано, и ссылки на выбранные части. Нажатие на фильтр или группу закрепляет выбор.
-// Без скрипта граф остаётся картинкой со ссылками.
+// Граф частей. Фильтр сверху («для чего») и наведение на точку подсвечивают связанное и пишут справа, что это.
+// Нажатие на точку показывает рядом пузырь: коротко что это и ссылка «Подробнее» — на описание под графом.
+// Без скрипта граф остаётся картинкой, а точки — ссылками на страницы.
 (function () {
   var graph = document.querySelector('[data-graph]');
   if (!graph) return;
+  var svg = graph.querySelector('svg');
+  var bubble = graph.querySelector('[data-graph-bubble]');
   var caption = graph.querySelector('[data-graph-caption]');
   var kind = graph.querySelector('[data-graph-kind]');
   var result = graph.querySelector('[data-graph-result]');
@@ -99,22 +101,20 @@
   var groups = graph.querySelectorAll('.graph__group');
   var edges = graph.querySelectorAll('.graph__edge');
   var chips = graph.querySelectorAll('[data-use]');
-  var picks = graph.querySelectorAll('.graph__pick');
-  var pinned = null;
+  var pinned = null, open = null;
+
+  function el(tag, text) { var n = document.createElement(tag); n.textContent = text; return n; }
 
   function say(label, title, text, list) {
     kind.textContent = label || kind.getAttribute('data-default');
     caption.textContent = '';
     result.textContent = '';
     if (!title) { caption.textContent = caption.getAttribute('data-default'); return; }
-    var b = document.createElement('strong');
-    b.textContent = title;
-    caption.appendChild(b);
+    caption.appendChild(el('strong', title));
     if (text) caption.appendChild(document.createTextNode(text));
     (list || []).forEach(function (p) {
-      var li = document.createElement('li'), a = document.createElement('a');
+      var li = document.createElement('li'), a = el('a', p.getAttribute('data-title'));
       a.href = p.getAttribute('href');
-      a.textContent = p.getAttribute('data-title');
       li.appendChild(a);
       result.appendChild(li);
     });
@@ -136,54 +136,77 @@
     return list;
   }
 
-  function mark(el) {
-    chips.forEach(function (c) { c.classList.toggle('is-on', c === el); });
-    picks.forEach(function (c) { c.classList.toggle('is-on', c === el); });
-  }
-
   function useChip(chip) {
     var use = chip.getAttribute('data-use');
-    mark(chip);
+    chips.forEach(function (c) { c.classList.toggle('is-on', c === chip); });
     var list = show(function (p) { return (' ' + p.getAttribute('data-uses') + ' ').indexOf(' ' + use + ' ') >= 0; });
     say('Для чего', chip.getAttribute('data-caption'), 'Для этого нужны:', list);
   }
 
-  function useGroup(id) {
-    var pick = graph.querySelector('.graph__pick[data-group="' + id + '"]');
-    mark(pick);
-    var list = show(function (p) { return p.getAttribute('data-group') === id; });
-    say('Группа', pick.getAttribute('data-caption'), 'В неё входят:', list);
+  function useNode(node) {
+    if (node.classList.contains('graph__group')) {
+      var id = node.getAttribute('data-group');
+      show(function (p) { return p.getAttribute('data-group') === id; });
+      say('Группа', node.getAttribute('data-title'), node.getAttribute('data-caption'));
+    } else {
+      show(function (p) { return p === node; });
+      say('Часть', node.getAttribute('data-title'), node.getAttribute('data-caption'));
+    }
   }
 
   function rest() {
-    if (pinned) return pinned.hasAttribute('data-use') ? useChip(pinned) : useGroup(pinned.getAttribute('data-group'));
-    mark(null);
+    if (open) return useNode(open);
+    if (pinned) return useChip(pinned);
+    chips.forEach(function (c) { c.classList.remove('is-on'); });
     show(null);
     say();
   }
 
-  function hover(el, enter) {
-    el.addEventListener('mouseenter', enter);
-    el.addEventListener('focus', enter);
-    el.addEventListener('mouseleave', rest);
-    el.addEventListener('blur', rest);
+  function closeBubble() {
+    if (!open) return;
+    open = null;
+    bubble.hidden = true;
+    rest();
   }
 
-  function pin(el) {
-    el.addEventListener('click', function (e) {
+  function openBubble(node) {
+    var box = svg.viewBox.baseVal, x = (node.getAttribute('data-x') - box.x) / box.width, y = (node.getAttribute('data-y') - box.y) / box.height;
+    open = node;
+    bubble.textContent = '';
+    bubble.appendChild(el('strong', node.getAttribute('data-title')));
+    bubble.appendChild(el('span', node.getAttribute('data-caption')));
+    var more = el('a', 'Подробнее ↓');
+    more.href = '#node-' + node.getAttribute('data-node');
+    bubble.appendChild(more);
+    bubble.style.left = (x * 100) + '%';
+    bubble.style.top = (y * 100) + '%';
+    bubble.className = 'graph__bubble' + (y > 0.55 ? ' is-up' : '') + (x > 0.66 ? ' is-left' : x < 0.34 ? ' is-right' : '');
+    bubble.hidden = false;
+    useNode(node);
+  }
+
+  function wire(node) {
+    node.addEventListener('mouseenter', function () { if (!open) useNode(node); });
+    node.addEventListener('focus', function () { if (!open) useNode(node); });
+    node.addEventListener('mouseleave', rest);
+    node.addEventListener('blur', rest);
+    node.addEventListener('click', function (e) {
       e.preventDefault();
-      pinned = pinned === el ? null : el;
-      rest();
+      e.stopPropagation();
+      if (open === node) closeBubble(); else openBubble(node);
     });
   }
 
-  parts.forEach(function (p) {
-    hover(p, function () {
-      show(function (x) { return x === p; });
-      say('Часть', p.getAttribute('data-title'), p.getAttribute('data-caption'));
-    });
+  parts.forEach(wire);
+  groups.forEach(wire);
+  chips.forEach(function (chip) {
+    chip.addEventListener('mouseenter', function () { if (!open) useChip(chip); });
+    chip.addEventListener('focus', function () { if (!open) useChip(chip); });
+    chip.addEventListener('mouseleave', rest);
+    chip.addEventListener('blur', rest);
+    chip.addEventListener('click', function () { open = null; bubble.hidden = true; pinned = pinned === chip ? null : chip; rest(); });
   });
-  groups.forEach(function (g) { hover(g, function () { useGroup(g.getAttribute('data-group')); }); });
-  picks.forEach(function (pick) { hover(pick, function () { useGroup(pick.getAttribute('data-group')); }); pin(pick); });
-  chips.forEach(function (chip) { hover(chip, function () { useChip(chip); }); pin(chip); });
+  bubble.addEventListener('click', function (e) { e.stopPropagation(); });
+  document.addEventListener('click', closeBubble);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeBubble(); });
 })();

@@ -203,6 +203,15 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 .usecase__text p { color: var(--ink-2); }
 @media (max-width: 860px) { .usecase { grid-template-columns: 1fr; gap: 28px; } }
 
+/* ---------- рамка вокруг ситуации в правой колонке ---------- */
+.frame { border: 1px solid var(--line-2); border-radius: var(--radius); background: var(--bg); padding: 22px; }
+.band--alt .frame { background: var(--surface); }
+.frame__label { margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--line); font: var(--w-normal) var(--t-label)/1.4 var(--font-mono); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
+.frame .chat { max-width: none; }
+.frame .chat__msg, .frame .chat__card { background: var(--surface); }
+.band--alt .frame .chat__msg, .band--alt .frame .chat__card { background: var(--bg); }
+@media (max-width: 640px) { .frame { padding: 16px; } }
+
 /* ---------- пример разговором: сообщение и следующим сообщением — карточки того, что записано ---------- */
 .chat { display: flex; flex-direction: column; gap: 16px; max-width: 560px; }
 .chat__label, .chat__from { font: var(--w-normal) var(--t-label)/1.4 var(--font-mono); color: var(--ink-3); }
@@ -224,20 +233,40 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 .graph__label { display: block; font: var(--w-normal) var(--t-label)/1.4 var(--font-mono); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
 .graph__filters { flex-direction: column; align-items: center; gap: 12px; }
 .graph__filters .chips { justify-content: center; }
-.graph__stage { display: grid; grid-template-columns: minmax(0, 230px) minmax(0, 560px) minmax(0, 270px); justify-content: space-between; align-items: center; gap: 32px; margin-top: 16px; }
-.graph__side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.graph__picks { list-style: none; padding: 0; display: flex; flex-direction: column; }
-.graph__pick { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: var(--t-small); color: var(--ink-2); transition: color .2s; }
-.graph__picks li:last-child .graph__pick { border-bottom: 1px solid var(--line); }
-.graph__pick:hover, .graph__pick.is-on { color: var(--ink); }
-.graph__pick.is-on { font-weight: var(--w-medium); }
-.graph__count { font: var(--w-normal) var(--t-label)/1.9 var(--font-mono); color: var(--ink-3); }
-.graph__side--result { align-self: center; min-height: 260px; }
+.graph__stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 270px); align-items: center; gap: 40px; margin-top: 16px; }
+.graph__canvas { position: relative; width: 100%; max-width: 620px; margin: 0 auto; }
+.graph__side { display: flex; flex-direction: column; gap: 14px; min-width: 0; min-height: 260px; }
 .graph__caption { font-size: var(--t-small); line-height: 1.55; color: var(--ink-2); }
 .graph__caption strong { display: block; margin-bottom: 6px; font-size: var(--t-h3); line-height: 1.3; color: var(--ink); font-weight: var(--w-medium); }
 .graph__result { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--t-small); }
 .graph__result a { color: var(--ink); border-bottom: 1px solid var(--line-2); }
 .graph__result a:hover { border-color: var(--ink); }
+.graph__legend { margin-top: auto; }
+/* пузырь у точки: что это, и ссылка «Подробнее» — на описание под графом */
+.graph__bubble { position: absolute; z-index: 3; width: 260px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--radius); box-shadow: 0 10px 30px color-mix(in srgb, var(--ink) 12%, transparent); display: flex; flex-direction: column; gap: 6px; text-align: left; transform: translate(-50%, 14px); }
+.graph__bubble[hidden] { display: none; }
+.graph__bubble.is-up { transform: translate(-50%, calc(-100% - 14px)); }
+.graph__bubble.is-left { transform: translate(-88%, 14px); }
+.graph__bubble.is-left.is-up { transform: translate(-88%, calc(-100% - 14px)); }
+.graph__bubble.is-right { transform: translate(-12%, 14px); }
+.graph__bubble.is-right.is-up { transform: translate(-12%, calc(-100% - 14px)); }
+.graph__bubble strong { font-weight: var(--w-medium); line-height: 1.3; }
+.graph__bubble span { font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.graph__bubble a { align-self: flex-start; margin-top: 4px; font-size: 14px; font-weight: var(--w-medium); border-bottom: 1px solid var(--ink); }
+/* описание точки под графом: показывается то, на которое ведёт ссылка */
+.graph__info { display: none; margin-top: 40px; padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); scroll-margin-top: 90px; text-align: left; }
+.graph__info:target { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.graph__info .graph__label { display: flex; align-items: center; gap: 10px; }
+.graph__info h3 { font-size: var(--t-h2); line-height: 1.25; letter-spacing: -0.015em; font-weight: var(--w-medium); }
+.graph__sum { font-size: var(--t-lead); line-height: 1.5; color: var(--ink-2); max-width: var(--text); }
+.graph__more { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px 40px; width: 100%; padding-top: 18px; border-top: 1px solid var(--line); }
+.graph__more p + p { margin-top: 8px; font-size: var(--t-small); line-height: 1.6; color: var(--ink-2); }
+.graph__parts { list-style: none; padding: 0; width: 100%; }
+.graph__parts li { display: grid; grid-template-columns: minmax(160px, 260px) auto 1fr; gap: 4px 16px; align-items: baseline; padding: 12px 0; border-top: 1px solid var(--line); }
+.graph__parts li:last-child { border-bottom: 1px solid var(--line); }
+.graph__parts a { font-weight: var(--w-medium); }
+.graph__parts li > span:last-child { grid-column: 3; font-size: var(--t-small); color: var(--ink-2); }
+@media (max-width: 640px) { .graph__parts li { grid-template-columns: 1fr; } .graph__parts li > span:last-child { grid-column: 1; } .graph__info { padding: 20px; } }
 .graph__canvas svg { display: block; width: 100%; height: auto; overflow: visible; }
 .graph__edge { fill: none; stroke: var(--line-2); stroke-width: 1; transition: stroke .3s, opacity .3s; }
 .graph__ring { fill: none; stroke: var(--line-2); stroke-dasharray: 3 5; }
@@ -254,7 +283,7 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 .graph.is-dim .graph__group:not(.is-on), .graph.is-dim .graph__part:not(.is-on), .graph.is-dim .graph__edge:not(.is-on) { opacity: 0.25; }
 .graph .graph__edge.is-on { stroke: var(--accent); }
 .graph__pulse { fill: var(--accent-soft); }
-.graph__legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font: var(--w-normal) var(--t-label)/1.4 var(--font-mono); color: var(--ink-3); }
+.graph__legend { display: flex; flex-wrap: wrap; gap: 8px 18px; padding-top: 14px; font: var(--w-normal) var(--t-label)/1.4 var(--font-mono); color: var(--ink-3); }
 .graph__legend span { display: flex; align-items: center; gap: 8px; }
 .graph__legend i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--accent); background: var(--surface); }
 .graph__legend .is-group { background: var(--accent); }
@@ -264,12 +293,12 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 @media (prefers-reduced-motion: reduce) { .graph__pulse { display: none; } html { scroll-behavior: auto; } }
 @media (max-width: 960px) {
   .hero__inner { padding-top: 48px; padding-bottom: 40px; }
-  .graph__stage { grid-template-columns: 1fr; gap: 24px; }
-  .graph__canvas { order: 1; max-width: 520px; width: 100%; margin: 0 auto; }
-  .graph__side--result { order: 2; min-height: 0; }
-  .graph__side:not(.graph__side--result) { order: 3; }
+  .graph__stage { grid-template-columns: 1fr; gap: 20px; }
+  .graph__canvas { max-width: 520px; }
+  .graph__side { min-height: 0; }
   .graph__group text { font-size: 20px; }
   .graph__core-label { font-size: 19px; }
+  .graph__bubble { width: 220px; }
 }
 
 /* ---------- поиск ---------- */
