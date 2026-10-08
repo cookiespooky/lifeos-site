@@ -13,7 +13,8 @@ theme/assets/styles.css, ни одного стиля в строке. Вид м
 
 Метки в src/: {{uses}} — плитки «Для кого», {{groups}} — колонки частей, {{parts}} — части одного варианта,
 {{howtos}} — инструкции, {{usetabs}} — «Для кого» вкладками с примерами, {{example}} — пример разговором: сообщение и
-следующим сообщением карточки того, что система записала (за меткой список; пишется на странице варианта). Формат главной —
+следующим сообщением карточки того, что система записала (за меткой список; пишется на странице варианта),
+{{integrations}} — значки приложений (за меткой: группа и под ней «Название: файл» из theme/assets/logos). Формат главной —
 в README.md. Только stdlib.
 """
 import html, json, math, os, re, shutil, sys
@@ -160,6 +161,23 @@ def use_tabs(uses, examples):
     return tabs('use', items)
 
 
+def integrations(lines, name):
+    """Знакомые приложения значками: «- Группа» и под ней «  - Название: файл из theme/assets/logos»."""
+    out, group = ['<div class="apps">'], None
+    for l in lines:
+        if l.startswith('- '):
+            if group:
+                out.append('</ul></div>')
+            group = l[2:].strip()
+            out.append(f'<div class="apps__group"><p class="apps__title">{esc(group)}</p><ul class="apps__list">')
+        elif re.match(r'\s+- ', l) and group:
+            title, _, file = l.strip()[2:].rpartition(': ')
+            if not os.path.exists(os.path.join(ROOT, 'theme', 'assets', 'logos', file.strip())):
+                errors.append(f'{name}: нет значка theme/assets/logos/{file.strip()} для «{title}»')
+            out.append(f'<li class="app"><img src="/assets/logos/{esc(file.strip())}" alt="" width="32" height="32" loading="lazy"><span>{esc(title.strip())}</span></li>')
+    return '\n'.join(out + (['</ul></div>'] if group else []) + ['</div>'])
+
+
 def actions(links):
     return '<div class="actions">' + ''.join(f'<a class="btn{" btn--primary" if i == 0 else ""}" href="{esc(u)}">{esc(t)}</a>' for i, (t, u) in enumerate(links)) + '</div>'
 
@@ -224,7 +242,7 @@ def graph(data, by_group, uses):
         f'<div class="graph__canvas"><svg viewBox="{CX - R2 - PAD} {CY - R2 - PAD} {2 * (R2 + PAD)} {2 * (R2 + PAD)}" role="img" aria-label="Схема: {esc(count)} системы вокруг общего центра">',
         *edges,
         f'<circle class="graph__ring" cx="{CX}" cy="{CY}" r="56"/><circle class="graph__core" cx="{CX}" cy="{CY}" r="40"/><text class="graph__core-label" x="{CX}" y="{CY + 5}">Life OS</text>',
-        *pulses, *nodes, '</svg><div class="graph__bubble" data-graph-bubble hidden></div></div>',
+        *pulses, *nodes, '</svg><div class="graph__bubble" data-graph-bubble></div></div>',
         '<div class="graph__side" aria-live="polite"><span class="graph__label" data-graph-kind data-default="Что на схеме">Что на схеме</span>',
         f'<p class="graph__caption" data-graph-caption data-default="{esc(lead)}">{esc(lead)}</p>',
         '<ul class="graph__result" data-graph-result></ul>',
@@ -272,6 +290,8 @@ def home(fm, body, name, marks, graph_html):
             lines = block.split('\n')
             if lines[0].strip() == '{{example}}':
                 block = example(lines[1:], name)
+            elif lines[0].strip() == '{{integrations}}':
+                block = integrations(lines[1:], name)
             elif all(l.startswith('- ') and LINK.fullmatch(l[2:].strip()) for l in lines):
                 block = actions([LINK.fullmatch(l[2:].strip()).groups() for l in lines])
             elif len(lines) == 1 and LINK.fullmatch(block.strip()):

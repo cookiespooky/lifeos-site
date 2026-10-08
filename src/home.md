@@ -21,6 +21,32 @@ hero_title: "Всё, что приходит, — в одном месте. И �
 Всё хранится обычными текстовыми файлами. Они открываются в любом редакторе и остаются вашими, даже если системой
 перестать пользоваться.
 
+## С чем работает {#with}
+
+### Привычные приложения остаются на месте: система подключается к ним.
+
+{{integrations}}
+- Уже работает
+  - Telegram: telegram.svg
+  - Яндекс Почта: yandex-mail.svg
+  - Obsidian: obsidian.svg
+  - VS Code: vscode.svg
+  - Яндекс Вордстат: yandex.svg
+  - Яндекс Метрика: yandex-metrika.svg
+  - Яндекс Вебмастер: yandex-webmaster.svg
+  - Threads: threads.svg
+  - Claude: claude.svg
+  - DeepSeek: deepseek.svg
+- В планах
+  - Google Календарь: google-calendar.svg
+  - Яндекс Директ: yandex-direct.svg
+  - GitHub: github.svg
+  - Т-Банк: tbank.png
+  - Сбер: sber.png
+  - amoCRM: amo.png
+  - YClients: yclients.png
+  - ВКонтакте: vk.svg
+
 ## Как это работает {#how}
 
 ### Несколько цепочек — от того, что пришло, до того, что с этим сделано.

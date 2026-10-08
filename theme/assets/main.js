@@ -165,7 +165,7 @@
   function closeBubble() {
     if (!open) return;
     open = null;
-    bubble.hidden = true;
+    bubble.classList.remove('is-open');   // гаснет плавно; содержимое остаётся до следующего открытия
     rest();
   }
 
@@ -180,8 +180,7 @@
     bubble.appendChild(more);
     bubble.style.left = (x * 100) + '%';
     bubble.style.top = (y * 100) + '%';
-    bubble.className = 'graph__bubble' + (y > 0.55 ? ' is-up' : '') + (x > 0.66 ? ' is-left' : x < 0.34 ? ' is-right' : '');
-    bubble.hidden = false;
+    bubble.className = 'graph__bubble is-open' + (y > 0.55 ? ' is-up' : '') + (x > 0.66 ? ' is-left' : x < 0.34 ? ' is-right' : '');
     useNode(node);
   }
 
@@ -193,6 +192,7 @@
     node.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
+      node.blur();
       if (open === node) closeBubble(); else openBubble(node);
     });
   }
@@ -204,7 +204,7 @@
     chip.addEventListener('focus', function () { if (!open) useChip(chip); });
     chip.addEventListener('mouseleave', rest);
     chip.addEventListener('blur', rest);
-    chip.addEventListener('click', function () { open = null; bubble.hidden = true; pinned = pinned === chip ? null : chip; rest(); });
+    chip.addEventListener('click', function () { open = null; bubble.classList.remove('is-open'); pinned = pinned === chip ? null : chip; rest(); });
   });
   bubble.addEventListener('click', function (e) { e.stopPropagation(); });
   document.addEventListener('click', closeBubble);

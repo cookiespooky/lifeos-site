@@ -203,6 +203,17 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 .usecase__text p { color: var(--ink-2); }
 @media (max-width: 860px) { .usecase { grid-template-columns: 1fr; gap: 28px; } }
 
+/* ---------- знакомые приложения значками ---------- */
+.apps { display: grid; gap: 32px; }
+.apps__title { font: var(--w-normal) var(--t-label)/1.4 var(--font-mono); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); margin-bottom: 14px; }
+.apps__list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.app { display: flex; align-items: center; gap: 10px; padding: 9px 16px 9px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-pill); font-size: var(--t-small); color: var(--ink); }
+.band--alt .app { background: var(--bg); }
+.app img { width: 28px; height: 28px; object-fit: contain; border-radius: 6px; flex: none; }
+.apps__group + .apps__group .app { border-style: dashed; border-color: var(--line-2); color: var(--ink-2); }
+.band__inner > .apps { margin-top: 40px; }
+@media (prefers-reduced-motion: reduce) { .graph__bubble, .graph__info:target { transition: none; animation: none; } }
+
 /* ---------- рамка вокруг ситуации в правой колонке ---------- */
 .frame { border: 1px solid var(--line-2); border-radius: var(--radius); background: var(--bg); padding: 22px; }
 .band--alt .frame { background: var(--surface); }
@@ -243,8 +254,9 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 .graph__result a:hover { border-color: var(--ink); }
 .graph__legend { margin-top: auto; }
 /* пузырь у точки: что это, и ссылка «Подробнее» — на описание под графом */
-.graph__bubble { position: absolute; z-index: 3; width: 260px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--radius); box-shadow: 0 10px 30px color-mix(in srgb, var(--ink) 12%, transparent); display: flex; flex-direction: column; gap: 6px; text-align: left; transform: translate(-50%, 14px); }
-.graph__bubble[hidden] { display: none; }
+.graph__bubble { position: absolute; z-index: 3; width: 260px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--radius); box-shadow: 0 10px 30px color-mix(in srgb, var(--ink) 12%, transparent); display: flex; flex-direction: column; gap: 6px; text-align: left; transform: translate(-50%, 14px);
+  opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .22s ease, visibility .22s ease; }
+.graph__bubble.is-open { opacity: 1; visibility: visible; pointer-events: auto; }
 .graph__bubble.is-up { transform: translate(-50%, calc(-100% - 14px)); }
 .graph__bubble.is-left { transform: translate(-88%, 14px); }
 .graph__bubble.is-left.is-up { transform: translate(-88%, calc(-100% - 14px)); }
@@ -255,7 +267,8 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 .graph__bubble a { align-self: flex-start; margin-top: 4px; font-size: 14px; font-weight: var(--w-medium); border-bottom: 1px solid var(--ink); }
 /* описание точки под графом: показывается то, на которое ведёт ссылка */
 .graph__info { display: none; margin-top: 40px; padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); scroll-margin-top: 90px; text-align: left; }
-.graph__info:target { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.graph__info:target { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; animation: fade-in .35s ease both; }
+@keyframes fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .graph__info .graph__label { display: flex; align-items: center; gap: 10px; }
 .graph__info h3 { font-size: var(--t-h2); line-height: 1.25; letter-spacing: -0.015em; font-weight: var(--w-medium); }
 .graph__sum { font-size: var(--t-lead); line-height: 1.5; color: var(--ink-2); max-width: var(--text); }
@@ -278,6 +291,9 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 .graph__part circle { fill: var(--surface); stroke: var(--accent); stroke-width: 1.5; transition: fill .2s; }
 .graph__part--soon circle { stroke-dasharray: 2 2; stroke: var(--ink-3); }
 .graph__part .graph__hit, .graph__group .graph__hit { fill: transparent; stroke: none; }
+/* точка — не кнопка: рамки при нажатии нет; выбранную с клавиатуры показывает заливка и подсветка связей */
+.graph__part, .graph__group, .graph__part:focus, .graph__group:focus, .graph__part:focus-visible, .graph__group:focus-visible { outline: none; -webkit-tap-highlight-color: transparent; }
+.graph__caption, .graph__result { transition: opacity .2s ease; }
 .graph__part:hover circle:not(.graph__hit), .graph__part.is-on circle:not(.graph__hit) { fill: var(--accent); }
 .graph__group, .graph__part, .graph__edge { transition: opacity .3s; }
 .graph.is-dim .graph__group:not(.is-on), .graph.is-dim .graph__part:not(.is-on), .graph.is-dim .graph__edge:not(.is-on) { opacity: 0.25; }
