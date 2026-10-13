@@ -14,8 +14,10 @@ theme/assets/styles.css, ни одного стиля в строке. Вид м
 Метки в src/: {{uses}} — плитки «Для кого», {{groups}} — колонки частей, {{parts}} — части одного варианта,
 {{howtos}} — инструкции, {{usetabs}} — «Для кого» вкладками с примерами, {{example}} — пример разговором: сообщение и
 следующим сообщением карточки того, что система записала (за меткой список; пишется на странице варианта),
-{{integrations}} — значки приложений (за меткой: группа и под ней «Название: файл» из theme/assets/logos). Формат главной —
-в README.md. Только stdlib.
+{{integrations}} — значки приложений (за меткой: группа и под ней «Название: файл» из theme/assets/logos),
+{{benefits}} — преимущества плитками («- Заголовок: текст»), {{ways}} — способы получить ссылками со значком
+(«- Заголовок: текст | значок | адрес»). src/flow.md (type: flow) — не страница, а схема первого
+экрана в три раздела; пока его нет, первый экран занимает граф частей из реестра. Формат главной — в README.md. Только stdlib.
 """
 import html, json, math, os, re, shutil, sys
 
@@ -98,12 +100,47 @@ def tiles(uses):
     return '\n'.join(out + ['</div>'])
 
 
-def cols(groups, by_group):
+def app(title, file, soon):
+    img = f'<img src="/assets/logos/{esc(file)}" alt="" width="32" height="32" loading="lazy">' if file else ''
+    return f'<li class="app{" app--soon" if soon else ""}"' + (' title="в планах"' if soon else '') + f'>{img}<span>{esc(title)}</span></li>'
+
+
+def apps_by_group(lines, name):
+    """Приложения по группам: «- Группа» и под ней «  - Название: файл из theme/assets/logos[, в планах]». Файла может
+    не быть — тогда строка без значка. -> [(группа, [(название, файл, в планах ли)])] в порядке записи."""
+    out = []
+    for l in lines:
+        if l.startswith('- '):
+            out.append((l[2:].strip(), []))
+        elif re.match(r'\s+- ', l) and out:
+            item, soon = l.strip()[2:], False
+            if item.endswith(', в планах'):
+                item, soon = item[:-len(', в планах')], True
+            title, _, file = item.rpartition(': ') if ': ' in item else (item, '', '')
+            if file and not os.path.exists(os.path.join(ROOT, 'theme', 'assets', 'logos', file.strip())):
+                errors.append(f'{name}: нет значка theme/assets/logos/{file.strip()} для «{title}»')
+            out[-1][1].append((title.strip(), file.strip(), soon))
+    return out
+
+
+def cols(groups, by_group, apps=None):
+    """Колонки частей по группам. apps — приложения, с которыми работает группа: встают значками под её частями;
+    группы из apps, которых нет в реестре (интерфейсы, адаптеры), идут строками под колонками."""
+    apps = apps or []
+    mine = {g: items for g, items in apps if g in groups}
     out = ['<div class="cols">']
     for i, g in enumerate(groups, 1):
         items = ''.join(f'<li><a href="{part_url(c)}">{esc(c["title"])}</a>{badge(c)}</li>' for c in by_group[g])
-        out.append(f'<div class="col"><span class="col__num">{i:02d}</span><h3 class="col__title">{esc(g)}</h3><ul class="col__list">{items}</ul></div>')
-    return '\n'.join(out + ['</div>'])
+        icons = f'<ul class="col__apps">{"".join(app(*a) for a in mine[g])}</ul>' if mine.get(g) else ''
+        out.append(f'<div class="col"><span class="col__num">{i:02d}</span><h3 class="col__title">{esc(g)}</h3><ul class="col__list">{items}</ul>{icons}</div>')
+    out.append('</div>')
+    rest = [(g, items) for g, items in apps if g not in groups]
+    if rest:
+        out.append('<div class="apps">')
+        for g, items in rest:
+            out.append(f'<div class="apps__group"><p class="apps__title">{esc(g)}</p><ul class="apps__list">{"".join(app(*a) for a in items)}</ul></div>')
+        out.append('</div>')
+    return '\n'.join(out)
 
 
 def tabs(name, items):
@@ -113,7 +150,7 @@ def tabs(name, items):
         errors.append(f'вкладок «{name}» больше восьми — в styles.css правил на столько нет')
     radios = [f'<input class="tabs__radio" type="radio" name="{name}" id="{name}-{i}" aria-label="{esc(label)}"{" checked" if i == 1 else ""}>' for i, (label, _) in enumerate(items, 1)]
     bar = '<div class="tabs__bar">' + ''.join(f'<label class="tabs__tab" for="{name}-{i}">{esc(label)}</label>' for i, (label, _) in enumerate(items, 1)) + '</div>'
-    return '\n'.join(['<div class="tabs">'] + radios + [bar] + [f'<section class="tabs__panel">{panel}</section>' for _, panel in items] + ['</div>'])
+    return '\n'.join([f'<div class="tabs tabs--{name}">'] + radios + [bar] + [f'<section class="tabs__panel">{panel}</section>' for _, panel in items] + ['</div>'])
 
 
 def chains(text, name):
@@ -200,13 +237,13 @@ def graph(data, by_group, uses):
         edges.append(f'<line class="graph__edge" data-group="g{gi}" x1="{CX}" y1="{CY}" x2="{gx}" y2="{gy}"/>')
         cos, sin = math.cos(ga), math.sin(ga)
         if abs(cos) > 0.35:
-            lx, ly, anchor = gx + (18 if cos > 0 else -18), gy + 5.5, 'start' if cos > 0 else 'end'
+            lx, ly, anchor = gx + (24 if cos > 0 else -24), gy + 8, 'start' if cos > 0 else 'end'
         else:
-            lx, ly, anchor = gx, gy + (32 if sin > 0 else -20), "middle"
+            lx, ly, anchor = gx, gy + (44 if sin > 0 else -24), "middle"
         names = ', '.join(c['title'] for c in parts)
         nodes.append(f'<a class="graph__group" href="/chto-vnutri/#g{gi}" data-group="g{gi}" data-node="g{gi}" data-x="{gx}" data-y="{gy}" data-title="{esc(g)}" data-caption="{esc(plural(len(parts), "часть", "части", "частей"))}: {esc(names)}.">'
-                     f'<circle class="graph__halo" cx="{gx}" cy="{gy}" r="15"/><circle cx="{gx}" cy="{gy}" r="7"/>'
-                     f'<text x="{round(lx, 1)}" y="{round(ly, 1)}" text-anchor="{anchor}">{esc(g)}</text><circle class="graph__hit" cx="{gx}" cy="{gy}" r="22"/></a>')
+                     f'<circle class="graph__halo" cx="{gx}" cy="{gy}" r="20"/><circle cx="{gx}" cy="{gy}" r="10"/>'
+                     f'<text x="{round(lx, 1)}" y="{round(ly, 1)}" text-anchor="{anchor}">{esc(g)}</text><circle class="graph__hit" cx="{gx}" cy="{gy}" r="30"/></a>')
         for c, pa in zip(parts, angles):
             px, py = pt(R2, pa)
             edges.append(f'<line class="graph__edge" data-group="g{gi}" data-part="{c["id"]}" x1="{gx}" y1="{gy}" x2="{px}" y2="{py}"/>')
@@ -214,14 +251,14 @@ def graph(data, by_group, uses):
             state = '' if c['status'] == 'работает' else f' ({c["status"]})'
             nodes.append(f'<a class="graph__part{soon}" href="{part_url(c)}" data-part="{c["id"]}" data-node="{c["id"]}" data-x="{px}" data-y="{py}" data-group="g{gi}" data-uses="{esc(" ".join(c["for"]))}" '
                          f'data-title="{esc(c["title"] + state)}" data-caption="{esc(c["summary"])}"><title>{esc(c["title"] + state)}</title>'
-                         f'<circle cx="{px}" cy="{py}" r="5.5"/><circle class="graph__hit" cx="{px}" cy="{py}" r="16"/></a>')
+                         f'<circle cx="{px}" cy="{py}" r="8"/><circle class="graph__hit" cx="{px}" cy="{py}" r="22"/></a>')
         px, py = pt(R2, angles[0])
         dur = 5 + gi % 3
-        pulses.append(f'<circle class="graph__pulse" r="2.5" opacity="0"><animateMotion dur="{dur}s" begin="{round(gi * 0.8, 1)}s" repeatCount="indefinite" path="M{px} {py} L{gx} {gy} L{CX} {CY}"/>'
+        pulses.append(f'<circle class="graph__pulse" r="3.5" opacity="0"><animateMotion dur="{dur}s" begin="{round(gi * 0.8, 1)}s" repeatCount="indefinite" path="M{px} {py} L{gx} {gy} L{CX} {CY}"/>'
                       f'<animate attributeName="opacity" dur="{dur}s" begin="{round(gi * 0.8, 1)}s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.15;0.8;1"/></circle>')
     n_parts, n_groups = len(data['components']), len(groups)
     count = f'{plural(n_groups, "группа", "группы", "групп")}, {plural(n_parts, "часть", "части", "частей")}'
-    lead = f'{count[0].upper() + count[1:]}. Нажмите на точку — рядом появится, что это; сверху можно выбрать, для чего система нужна.'
+    lead = f'{count[0].upper() + count[1:]}. Нажмите на точку — здесь появится, что это; кнопками выше можно выбрать, для чего система нужна.'
     soon = any(c['status'] != 'работает' for c in data['components'])
     chips = ''.join(f'<button class="chip" type="button" data-use="{esc(fm["use"])}" data-caption="{esc(fm["title"])}">{esc(fm["use"])}</button>' for _, fm, _, _ in uses)
     # Подробное описание каждой точки лежит под графом и открывается по ссылке «Подробнее» из пузыря (правило :target).
@@ -237,12 +274,12 @@ def graph(data, by_group, uses):
                         f'<div class="graph__more">{how}{human}</div><a class="more" href="{part_url(c)}">Открыть страницу <span aria-hidden="true">→</span></a></article>')
     return '\n'.join([
         '<div class="graph" data-graph>',
-        f'<div class="graph__filters js-only"><span class="graph__label">Для чего</span><div class="chips">{chips}</div></div>',
         '<div class="graph__stage">',
         f'<div class="graph__canvas"><svg viewBox="{CX - R2 - PAD} {CY - R2 - PAD} {2 * (R2 + PAD)} {2 * (R2 + PAD)}" role="img" aria-label="Схема: {esc(count)} системы вокруг общего центра">',
         *edges,
-        f'<circle class="graph__ring" cx="{CX}" cy="{CY}" r="56"/><circle class="graph__core" cx="{CX}" cy="{CY}" r="40"/><text class="graph__core-label" x="{CX}" y="{CY + 5}">Life OS</text>',
-        *pulses, *nodes, '</svg><div class="graph__bubble" data-graph-bubble></div></div>',
+        f'<circle class="graph__ring" cx="{CX}" cy="{CY}" r="66"/><circle class="graph__core" cx="{CX}" cy="{CY}" r="50"/><text class="graph__core-label" x="{CX}" y="{CY + 8}">Life OS</text>',
+        *pulses, *nodes, '</svg></div>',
+        f'<div class="graph__filters js-only"><span class="graph__label">Для чего</span><div class="chips">{chips}</div></div>',
         '<div class="graph__side" aria-live="polite"><span class="graph__label" data-graph-kind data-default="Что на схеме">Что на схеме</span>',
         f'<p class="graph__caption" data-graph-caption data-default="{esc(lead)}">{esc(lead)}</p>',
         '<ul class="graph__result" data-graph-result></ul>',
@@ -250,6 +287,138 @@ def graph(data, by_group, uses):
         '</div>',
         '<div class="graph__details">', *info, '</div>',
         '</div>'])
+
+
+def flow_parse(body, name):
+    """src/flow.md: три «## Раздел», под каждым абзац и список «- Точка: что это» с вложенными «  - Название: файл из
+    theme/assets/logos» (без файла — подпись словом). -> [(раздел, описание, [(точка, что это, [(название, файл)])])]"""
+    out = []
+    for chunk in re.split(r'^## ', body, flags=re.M)[1:]:
+        title, _, rest = chunk.partition('\n')
+        lines = rest.split('\n')
+        text = ' '.join(l.strip() for l in lines if l.strip() and not l.lstrip().startswith('- '))
+        nodes = []
+        for l in lines:
+            if l.startswith('- '):
+                t, _, c = l[2:].partition(': ')
+                nodes.append((t.strip(), c.strip(), []))
+            elif re.match(r'\s+- ', l) and nodes:
+                t, _, f = l.strip()[2:].partition(': ')
+                if f.strip() and not os.path.exists(os.path.join(ROOT, 'theme', 'assets', 'logos', f.strip())):
+                    errors.append(f'{name}: нет значка theme/assets/logos/{f.strip()} для «{t}»')
+                nodes[-1][2].append((t.strip(), f.strip()))
+        if not text or not nodes or any(not c for _, c, _ in nodes):
+            errors.append(f'{name}: раздел «{title.strip()}» — нужен абзац и список «- Точка: что это»')
+        out.append((title.strip(), text, nodes))
+    if len(out) != 3:
+        errors.append(f'{name}: разделов должно быть три — что поступает, сама система, что получается')
+    return out
+
+
+def flow(sections):
+    """Схема в три экрана сверху вниз: что поступает → Life OS → что получается. У каждого экрана своя картинка; линия
+    уходит в нижний край одной и продолжается с верхнего края следующей, поэтому экраны стоят вплотную."""
+    W, CX = 600, 300
+    data = lambda title, kind, cap: f'tabindex="0" role="button" data-title="{esc(title)}" data-kind="{esc(kind)}" data-caption="{esc(cap)}"'
+
+    def fan(sec, nodes, down):
+        """Точки в ряд и их источники: down — линии приходят сверху (выход), иначе уходят вниз (вход)."""
+        JOIN = 70                                   # прямой отрезок линии у стыка экранов: он и есть отступ между ними
+        H = 380 + JOIN if down else 350 + JOIN
+        gy, d = (120 + JOIN, 1) if down else (220, -1)
+        edges, marks, pulses = [], [], []
+        for i, (g, cap, kids) in enumerate(nodes):
+            gx = round(W * (i + 0.5) / len(nodes), 1)
+            path = (f'M{CX} 0 L{CX} {JOIN} C{CX} {JOIN + 70} {gx} {gy - 70} {gx} {gy}' if down
+                    else f'M{gx} {gy} C{gx} {gy + 70} {CX} {H - JOIN - 70} {CX} {H - JOIN} L{CX} {H}')
+            edges.append(f'<path class="flow__edge" d="{path}"/>')
+            dur = 4 + i % 3
+            pulses.append(f'<circle class="graph__pulse" r="3.5" opacity="0"><animateMotion dur="{dur}s" begin="{round(i * 0.7, 1)}s" repeatCount="indefinite" path="{path}"/>'
+                          f'<animate attributeName="opacity" dur="{dur}s" begin="{round(i * 0.7, 1)}s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.15;0.8;1"/></circle>')
+            # Источники стоят друг под другом. На входе у каждого маленький значок и название; на выходе — только названия.
+            kid = []
+            if down:
+                if kids:
+                    edges.append(f'<line class="flow__edge" x1="{gx}" y1="{gy + 48}" x2="{gx}" y2="{gy + 80}"/>')   # от подписи точки к её списку
+                for j, (t, _) in enumerate(kids):
+                    y = gy + 96 + 22 * j
+                    kid.append(f'<g class="flow__node flow__word" {data(t, g, cap)}><rect x="{gx - 52}" y="{y - 10}" width="104" height="20" rx="4"/><text x="{gx}" y="{y + 5}">{esc(t)}</text></g>')
+            elif kids:
+                icons = any(f for _, f in kids)
+                wide = max(len(t) for t, _ in kids) * 7.2 + (22 if icons else 0)   # ширина столбца — по самой длинной строке
+                x0 = round(gx - wide / 2, 1)
+                edges.append(f'<line class="flow__edge" x1="{gx}" y1="{gy}" x2="{gx}" y2="{gy - 58}"/>')
+                for j, (t, f) in enumerate(kids):
+                    y = gy - 76 - 26 * (len(kids) - 1 - j)
+                    icon = (f'<image href="/assets/logos/{esc(f)}" x="{x0}" y="{y - 8}" width="16" height="16"/>' if f
+                            else f'<circle class="flow__ring" cx="{x0 + 8}" cy="{y}" r="5.5"/>' if icons else '')
+                    label = f'<text x="{x0 + 22}" y="{y + 4.5}">{esc(t)}</text>' if icons else f'<text x="{gx}" y="{y + 4.5}">{esc(t)}</text>'
+                    kid.append(f'<g class="flow__node flow__app{" flow__app--left" if icons else ""}" {data(t, g, cap)}>'
+                               f'<rect x="{x0 - 4}" y="{y - 12}" width="{round(wide + 8, 1)}" height="24" rx="4"/>{icon}{label}</g>')
+            marks.append(f'<g class="flow__node flow__group" {data(g, sec, cap)}><circle class="graph__halo" cx="{gx}" cy="{gy}" r="20"/><circle cx="{gx}" cy="{gy}" r="10"/>'
+                         f'<text x="{gx}" y="{gy + 37}">{esc(g)}</text></g>' + ''.join(kid))
+        return H, edges + pulses + marks
+
+    def core(sec, nodes):
+        """Сама система: линия проходит сверху вниз через центр, вокруг — что в ней происходит."""
+        H, CY = 560, 280                            # сверху и снизу — по 70 единиц прямой линии: отступ от соседних экранов
+        left = [(130, 165), (95, 280), (130, 395)]
+        spots = left + [(W - x, y) for x, y in left]
+        if len(nodes) > len(spots):
+            errors.append(f'в разделе «{sec}» точек больше {len(spots)} — на схеме мест нет')
+        path = f'M{CX} 0 L{CX} {H}'
+        out = [f'<path class="flow__edge" d="{path}"/>']
+        out += [f'<line class="flow__edge" x1="{CX}" y1="{CY}" x2="{x}" y2="{y}"/>' for (x, y), _ in zip(spots, nodes)]
+        out.append(f'<circle class="graph__pulse" r="3.5" opacity="0"><animateMotion dur="5s" repeatCount="indefinite" path="{path}"/>'
+                   f'<animate attributeName="opacity" dur="5s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.15;0.8;1"/></circle>')
+        out.append(f'<circle class="graph__ring" cx="{CX}" cy="{CY}" r="68"/><circle class="graph__core" cx="{CX}" cy="{CY}" r="52"/><text class="graph__core-label" x="{CX}" y="{CY + 8}">Life OS</text>')
+        out += [f'<g class="flow__node flow__part" {data(t, sec, cap)}><circle cx="{x}" cy="{y}" r="9"/><text x="{x}" y="{y + 30}">{esc(t)}</text></g>' for (x, y), (t, cap, _) in zip(spots, nodes)]
+        return H, out
+
+    hint = 'Наведите на точку или нажмите на неё — рядом появится, что это.'
+    rows = []
+    for n, (sec, text, nodes) in enumerate(sections, 1):
+        H, body = core(sec, nodes) if n == 2 else fan(sec, nodes, n == 3)
+        rows += [f'<section class="flow__row flow__row--{n}">',
+                 f'<div class="flow__text"><p class="graph__label">{n:02d} из {len(sections):02d}</p><h2 class="flow__title">{esc(typo(sec))}</h2><p>{esc(text)}</p>'
+                 + (f'<p class="flow__hint js-only">{esc(hint)}</p>' if n == 1 else '') + '</div>',
+                 f'<div class="flow__canvas"><svg viewBox="0 0 {W} {H}" role="img" aria-label="{esc(sec)}: {esc(", ".join(t for t, _, _ in nodes))}">', *body, '</svg></div>',
+                 '<div class="flow__side js-only" aria-live="polite"><span class="graph__label" data-flow-kind></span><p class="flow__caption" data-flow-caption></p></div>',
+                 '</section>']
+    sheet = ('<div class="sheet" data-flow-sheet aria-live="polite"><button class="sheet__close" type="button" aria-label="Закрыть">×</button>'
+             '<span class="graph__label" data-sheet-kind></span><strong data-sheet-title></strong><p data-sheet-text></p></div>')
+    return '\n'.join(['<div class="flow" data-flow>', *rows, sheet, '</div>'])
+
+
+def benefits(lines, name):
+    """Преимущества плитками: «- Заголовок: текст»."""
+    out = ['<div class="tiles tiles--plain">']
+    for n, l in enumerate([l for l in lines if l.startswith('- ')], 1):
+        t, _, text = l[2:].partition(': ')
+        if not text:
+            errors.append(f'{name}: преимущество «{t}» — нужно «Заголовок: текст»')
+        out.append(f'<div class="tile"><span class="tile__label"><span>{n:02d}</span></span><span class="tile__title">{esc(typo(t))}</span><span class="tile__text">{esc(text)}</span></div>')
+    return '\n'.join(out + ['</div>'])
+
+
+def ways(lines, name):
+    """Способы получить — крупными ссылками со значком: «- Заголовок: текст | файл из theme/assets/logos | адрес».
+    Вместо адреса слово «скоро» — карточка бледная и без ссылки."""
+    out = ['<div class="ways">']
+    for l in [l for l in lines if l.startswith('- ')]:
+        parts = [x.strip() for x in l[2:].split(' | ')]
+        head, _, text = parts[0].partition(': ')
+        if len(parts) != 3 or not text:
+            errors.append(f'{name}: способ «{head}» — нужно «Заголовок: текст | значок | адрес»')
+            continue
+        if not os.path.exists(os.path.join(ROOT, 'theme', 'assets', 'logos', parts[1])):
+            errors.append(f'{name}: нет значка theme/assets/logos/{parts[1]} для «{head}»')
+        soon = parts[2] == 'скоро'                    # ссылки ещё нет: карточка бледная и не нажимается
+        tag, end = ('<div class="way way--soon">', '</div>') if soon else (f'<a class="way" href="{esc(parts[2])}">', '</a>')
+        arrow = '' if soon else ' <span aria-hidden="true">→</span>'
+        out.append(f'{tag}<span class="way__icon"><img src="/assets/logos/{esc(parts[1])}" alt="" width="28" height="28" loading="lazy"></span>'
+                   f'<span class="way__title">{esc(typo(head))}{arrow}</span><span class="way__text">{esc(text)}</span>{end}')
+    return '\n'.join(out + ['</div>'])
 
 
 # ---------- главная ----------
@@ -267,10 +436,11 @@ def home(fm, body, name, marks, graph_html):
     for key in ('kicker', 'hero_title'):
         if not fm.get(key):
             errors.append(f'{name}: в свойствах нет {key}')
-    # Первый экран — одной колонкой: подпись, заголовок, подзаголовок, кнопки; ниже граф во всю ширину с фильтрами
-    # над ним, выбором слева и описанием выбранного справа.
+    # Первый экран — одной колонкой: подпись, заголовок, подзаголовок (hero_sub), короткое описание, кнопки; ниже друг
+    # под другом граф, фильтры «для чего» и описание выбранного — так, чтобы три последних помещались на один экран.
     out = ['\n'.join(['<section class="hero">', '<div class="hero__inner">', '<div class="hero__text">',
                       f'<p class="eyebrow"><span>{esc(fm.get("kicker", ""))}</span></p>', f'<h1 class="hero__title">{esc(typo(fm.get("hero_title", "")))}</h1>',
+                      *([f'<p class="hero__sub">{esc(typo(fm["hero_sub"]))}</p>'] if fm.get('hero_sub') else []),
                       f'<p class="hero__lead">{esc(lead)}</p>', *([actions(buttons)] if buttons else []), '</div>', graph_html, '</div>', '</section>'])]
     for n, chunk in enumerate(chunks[1:], 1):
         headline, _, rest = chunk.partition('\n')
@@ -292,11 +462,17 @@ def home(fm, body, name, marks, graph_html):
                 block = example(lines[1:], name)
             elif lines[0].strip() == '{{integrations}}':
                 block = integrations(lines[1:], name)
+            elif lines[0].strip() == '{{benefits}}':
+                block = benefits(lines[1:], name)
+            elif lines[0].strip() == '{{ways}}':
+                block = ways(lines[1:], name)
             elif all(l.startswith('- ') and LINK.fullmatch(l[2:].strip()) for l in lines):
                 block = actions([LINK.fullmatch(l[2:].strip()).groups() for l in lines])
             elif len(lines) == 1 and LINK.fullmatch(block.strip()):
                 t, u = LINK.fullmatch(block.strip()).groups()
                 block = f'<p><a class="more" href="{esc(u)}">{esc(t)}</a></p>'
+            elif lines[0].strip() == '{{groups}}' and len(lines) > 1:
+                block = marks['cols'](apps_by_group(lines[1:], name))
             elif block.strip() in ('{{uses}}', '{{groups}}', '{{usetabs}}'):
                 block = marks[block.strip()[2:-2]]
             blocks.append(block)
@@ -311,7 +487,7 @@ def main():
     data = json.load(open(DATA, encoding='utf-8'))
     comps = data['components']
     by_group = {g: [c for c in comps if c['group'] == g] for g in data['groups']}
-    files, uses, howtos = {}, [], []
+    files, uses, howtos, flow_sections = {}, [], [], None
     # День, когда реестр завели: строки «заведено» этого дня — учёт, а не новость, на сайт они не идут.
     born = min((ch['date'] for ch in data['changes'] if ch['text'].startswith('заведено')), default='')
     data['changes'] = [ch for ch in data['changes'] if not (ch['text'].startswith('заведено') and ch['date'] == born)]
@@ -321,7 +497,9 @@ def main():
         low = text.lower()
         errors.extend(f'{name}: слово с «{w}» — его на сайте быть не должно' for w in STOP if w in low)
         fm, body = split(text, name)
-        if fm.get('type') == 'use':
+        if fm.get('type') == 'flow':
+            flow_sections = flow_parse(body, name)
+        elif fm.get('type') == 'use':
             if fm.get('use') not in data['uses']:
                 errors.append(f'{name}: use «{fm.get("use")}» нет в реестре: {", ".join(data["uses"])}')
             uses.append((int(fm.get('order') or 0), fm, body, name))
@@ -339,6 +517,7 @@ def main():
     marks = {
         'usetabs': use_tabs(uses, examples),
         'groups': cols(data['groups'], by_group),
+        'cols': lambda apps: cols(data['groups'], by_group, apps),
         'uses': tiles(uses),
         'howtos': rows_dated([(None, fm['title'], f'/kak/{fm["slug"]}/', fm['description']) for _, fm, _, _ in howtos]) if howtos else '',
     }
@@ -347,7 +526,9 @@ def main():
         fm, body = split(text, name)
         if fm.get('type') == 'home':
             files['index.md'] = page('home', fm.get('slug', ''), fm.get('title', ''), fm.get('description', ''),
-                                     home(fm, body, name, marks, graph(data, by_group, uses)))
+                                     home(fm, body, name, marks, flow(flow_sections) if flow_sections else graph(data, by_group, uses)))
+            continue
+        if fm.get('type') == 'flow':
             continue
         local = dict(marks)
         if fm.get('type') == 'use':

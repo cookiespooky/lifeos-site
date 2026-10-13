@@ -32,5 +32,8 @@
   </main>
   {{ template "footer.html" . }}
   <script src="{{ .AssetsBase }}/main.js"></script>
+  {{- if eq .Page.Type "home" }}
+  <script src="{{ .AssetsBase }}/live.js"></script>
+  {{- end }}
 </body>
 </html>

@@ -86,14 +86,13 @@
   wireSearchInput();
 })();
 
-// Граф частей. Фильтр сверху («для чего») и наведение на точку подсвечивают связанное и пишут справа, что это.
-// Нажатие на точку показывает рядом пузырь: коротко что это и ссылка «Подробнее» — на описание под графом.
+// Граф частей. Фильтр под графом («для чего») и наведение на точку подсвечивают связанное и пишут ниже, что это.
+// Нажатие на точку закрепляет её описание под фильтром и добавляет ссылку «Подробнее» — на полное описание ниже.
 // Без скрипта граф остаётся картинкой, а точки — ссылками на страницы.
 (function () {
   var graph = document.querySelector('[data-graph]');
   if (!graph) return;
   var svg = graph.querySelector('svg');
-  var bubble = graph.querySelector('[data-graph-bubble]');
   var caption = graph.querySelector('[data-graph-caption]');
   var kind = graph.querySelector('[data-graph-kind]');
   var result = graph.querySelector('[data-graph-result]');
@@ -105,13 +104,14 @@
 
   function el(tag, text) { var n = document.createElement(tag); n.textContent = text; return n; }
 
-  function say(label, title, text, list) {
+  function say(label, title, text, list, more) {
     kind.textContent = label || kind.getAttribute('data-default');
     caption.textContent = '';
     result.textContent = '';
     if (!title) { caption.textContent = caption.getAttribute('data-default'); return; }
     caption.appendChild(el('strong', title));
     if (text) caption.appendChild(document.createTextNode(text));
+    if (more) { var a = el('a', 'Подробнее ↓'); a.href = more; caption.appendChild(document.createElement('br')); caption.appendChild(a); }
     (list || []).forEach(function (p) {
       var li = document.createElement('li'), a = el('a', p.getAttribute('data-title'));
       a.href = p.getAttribute('href');
@@ -144,13 +144,14 @@
   }
 
   function useNode(node) {
+    var more = node === open ? '#node-' + node.getAttribute('data-node') : '';
     if (node.classList.contains('graph__group')) {
       var id = node.getAttribute('data-group');
       show(function (p) { return p.getAttribute('data-group') === id; });
-      say('Группа', node.getAttribute('data-title'), node.getAttribute('data-caption'));
+      say('Группа', node.getAttribute('data-title'), node.getAttribute('data-caption'), null, more);
     } else {
       show(function (p) { return p === node; });
-      say('Часть', node.getAttribute('data-title'), node.getAttribute('data-caption'));
+      say('Часть', node.getAttribute('data-title'), node.getAttribute('data-caption'), null, more);
     }
   }
 
@@ -165,22 +166,11 @@
   function closeBubble() {
     if (!open) return;
     open = null;
-    bubble.classList.remove('is-open');   // гаснет плавно; содержимое остаётся до следующего открытия
     rest();
   }
 
   function openBubble(node) {
-    var box = svg.viewBox.baseVal, x = (node.getAttribute('data-x') - box.x) / box.width, y = (node.getAttribute('data-y') - box.y) / box.height;
     open = node;
-    bubble.textContent = '';
-    bubble.appendChild(el('strong', node.getAttribute('data-title')));
-    bubble.appendChild(el('span', node.getAttribute('data-caption')));
-    var more = el('a', 'Подробнее ↓');
-    more.href = '#node-' + node.getAttribute('data-node');
-    bubble.appendChild(more);
-    bubble.style.left = (x * 100) + '%';
-    bubble.style.top = (y * 100) + '%';
-    bubble.className = 'graph__bubble is-open' + (y > 0.55 ? ' is-up' : '') + (x > 0.66 ? ' is-left' : x < 0.34 ? ' is-right' : '');
     useNode(node);
   }
 
@@ -204,9 +194,87 @@
     chip.addEventListener('focus', function () { if (!open) useChip(chip); });
     chip.addEventListener('mouseleave', rest);
     chip.addEventListener('blur', rest);
-    chip.addEventListener('click', function () { open = null; bubble.classList.remove('is-open'); pinned = pinned === chip ? null : chip; rest(); });
+    chip.addEventListener('click', function (e) { e.stopPropagation(); open = null; pinned = pinned === chip ? null : chip; rest(); });
   });
-  bubble.addEventListener('click', function (e) { e.stopPropagation(); });
+  caption.addEventListener('click', function (e) { e.stopPropagation(); });
   document.addEventListener('click', closeBubble);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeBubble(); });
 })();
+
+// Схема в три экрана. Наведение на точку пишет справа от её экрана, что это; нажатие закрепляет описание.
+// На узком экране колонки справа нет — описание выезжает шторкой снизу. Без скрипта у точек остаются подсказки.
+(function () {
+  var flow = document.querySelector('[data-flow]');
+  if (!flow) return;
+  var sheet = flow.querySelector('[data-flow-sheet]');
+  var narrow = window.matchMedia('(max-width: 860px)');
+  var pinned = [];
+
+  function closeSheet() { sheet.classList.remove('is-open'); }
+
+  flow.querySelectorAll('.flow__row').forEach(function (row, i) {
+    var kind = row.querySelector('[data-flow-kind]'), caption = row.querySelector('[data-flow-caption]');
+    var nodes = row.querySelectorAll('.flow__node');
+
+    var side = row.querySelector('.flow__side'), shown = null, timer;
+
+    function fill(node) {
+      kind.textContent = node.getAttribute('data-kind');
+      caption.textContent = '';
+      var strong = document.createElement('strong');
+      strong.textContent = node.getAttribute('data-title');
+      caption.appendChild(strong);
+      caption.appendChild(document.createTextNode(node.getAttribute('data-caption')));
+    }
+
+    // Карточка проявляется, когда точка выбрана, и гаснет через полсекунды после ухода с неё. При переходе на другую
+    // точку текст меняется сразу и только проявляется заново: ждать, пока погаснет прежний, не нужно — иначе при
+    // быстрой смене точек карточка отстаёт от курсора.
+    function say(node) {
+      clearTimeout(timer);
+      if (!node) { timer = setTimeout(function () { side.classList.remove('is-in'); shown = null; }, 500); return; }
+      if (node === shown) return;
+      fill(node);
+      if (shown) {
+        side.classList.remove('is-fresh');
+        void side.offsetWidth;            // перезапуск проявления текста
+        side.classList.add('is-fresh');
+      }
+      side.classList.add('is-in');
+      shown = node;
+    }
+
+    function pin(node) {
+      pinned[i] = node;
+      nodes.forEach(function (n) { n.classList.toggle('is-on', n === node); });
+      say(node);
+    }
+
+    function choose(node) {
+      if (narrow.matches) {
+        nodes.forEach(function (n) { n.classList.toggle('is-on', n === node); });
+        sheet.querySelector('[data-sheet-kind]').textContent = node.getAttribute('data-kind');
+        sheet.querySelector('[data-sheet-title]').textContent = node.getAttribute('data-title');
+        sheet.querySelector('[data-sheet-text]').textContent = node.getAttribute('data-caption');
+        sheet.classList.add('is-open');
+      } else {
+        pin(pinned[i] === node ? null : node);
+      }
+    }
+
+    nodes.forEach(function (node) {
+      node.addEventListener('mouseenter', function () { say(node); });
+      node.addEventListener('mouseleave', function () { say(pinned[i] || null); });
+      node.addEventListener('focus', function () { say(node); });
+      node.addEventListener('blur', function () { say(pinned[i] || null); });
+      node.addEventListener('click', function (e) { e.stopPropagation(); choose(node); });
+      node.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(node); } });
+    });
+  });
+
+  sheet.addEventListener('click', function (e) { e.stopPropagation(); });
+  sheet.querySelector('.sheet__close').addEventListener('click', closeSheet);
+  document.addEventListener('click', closeSheet);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
+})();
+

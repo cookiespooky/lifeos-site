@@ -50,6 +50,7 @@ settings:
   site_name: "Life OS"
   contact_url: "https://t.me/cookiespooky"
   contact_label: "Написать автору"
+  apply_label: "Получить"
   cta_kicker: "С чего начать"
   cta_title: "Расскажите, какая работа у вас главная."
   cta_text: "Автор ответит, подойдёт ли система."
