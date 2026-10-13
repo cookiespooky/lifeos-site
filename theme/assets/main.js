@@ -227,21 +227,21 @@
       caption.appendChild(document.createTextNode(node.getAttribute('data-caption')));
     }
 
-    // Карточка проявляется, когда точка выбрана, и гаснет через полсекунды после ухода с неё. При переходе на другую
-    // точку текст меняется сразу и только проявляется заново: ждать, пока погаснет прежний, не нужно — иначе при
-    // быстрой смене точек карточка отстаёт от курсора.
+    // Карточка видна всегда: пока ничего не выбрано, в ней подсказка (её текст — в свойствах самой карточки).
+    // Навели на точку — текст меняется сразу и проявляется заново; ушли — через полсекунды возвращается подсказка.
+    function show(from) {
+      fill(from);
+      side.classList.remove('is-fresh');
+      void side.offsetWidth;              // перезапуск проявления текста
+      side.classList.add('is-fresh');
+    }
+
     function say(node) {
       clearTimeout(timer);
-      if (!node) { timer = setTimeout(function () { side.classList.remove('is-in'); shown = null; }, 500); return; }
+      if (!node) { timer = setTimeout(function () { if (shown) { shown = null; show(side); } }, 500); return; }
       if (node === shown) return;
-      fill(node);
-      if (shown) {
-        side.classList.remove('is-fresh');
-        void side.offsetWidth;            // перезапуск проявления текста
-        side.classList.add('is-fresh');
-      }
-      side.classList.add('is-in');
       shown = node;
+      show(node);
     }
 
     function pin(node) {
@@ -276,5 +276,14 @@
   sheet.querySelector('.sheet__close').addEventListener('click', closeSheet);
   document.addEventListener('click', closeSheet);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
+})();
+
+// Боковое меню на узком экране открывается без скрипта (переключатель в шапке). Скрипт только закрывает его:
+// после перехода по ссылке внутри ящика и по Escape.
+(function () {
+  var toggle = document.getElementById('nav-toggle'), drawer = document.querySelector('[data-drawer]');
+  if (!toggle || !drawer) return;
+  drawer.addEventListener('click', function (e) { if (e.target.closest('a')) toggle.checked = false; });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') toggle.checked = false; });
 })();
 

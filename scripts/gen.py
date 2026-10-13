@@ -342,7 +342,7 @@ def flow(sections):
                     edges.append(f'<line class="flow__edge" x1="{gx}" y1="{gy + 48}" x2="{gx}" y2="{gy + 80}"/>')   # от подписи точки к её списку
                 for j, (t, _) in enumerate(kids):
                     y = gy + 96 + 22 * j
-                    kid.append(f'<g class="flow__node flow__word" {data(t, g, cap)}><rect x="{gx - 52}" y="{y - 10}" width="104" height="20" rx="4"/><text x="{gx}" y="{y + 5}">{esc(t)}</text></g>')
+                    kid.append(f'<g class="flow__node flow__word" {data(t, g, cap)}><rect x="{gx - 58}" y="{y - 10}" width="116" height="20" rx="4"/><text x="{gx}" y="{y + 5}">{esc(t)}</text></g>')
             elif kids:
                 icons = any(f for _, f in kids)
                 wide = max(len(t) for t, _ in kids) * 7.2 + (22 if icons else 0)   # ширина столбца — по самой длинной строке
@@ -352,8 +352,8 @@ def flow(sections):
                     y = gy - 76 - 26 * (len(kids) - 1 - j)
                     icon = (f'<image href="/assets/logos/{esc(f)}" x="{x0}" y="{y - 8}" width="16" height="16"/>' if f
                             else f'<circle class="flow__ring" cx="{x0 + 8}" cy="{y}" r="5.5"/>' if icons else '')
-                    label = f'<text x="{x0 + 22}" y="{y + 4.5}">{esc(t)}</text>' if icons else f'<text x="{gx}" y="{y + 4.5}">{esc(t)}</text>'
-                    kid.append(f'<g class="flow__node flow__app{" flow__app--left" if icons else ""}" {data(t, g, cap)}>'
+                    label = f'<text x="{x0 + (22 if icons else 0)}" y="{y + 4.5}">{esc(t)}</text>'   # столбец выровнен по левому краю
+                    kid.append(f'<g class="flow__node flow__app flow__app--left" {data(t, g, cap)}>'
                                f'<rect x="{x0 - 4}" y="{y - 12}" width="{round(wide + 8, 1)}" height="24" rx="4"/>{icon}{label}</g>')
             marks.append(f'<g class="flow__node flow__group" {data(g, sec, cap)}><circle class="graph__halo" cx="{gx}" cy="{gy}" r="20"/><circle cx="{gx}" cy="{gy}" r="10"/>'
                          f'<text x="{gx}" y="{gy + 37}">{esc(g)}</text></g>' + ''.join(kid))
@@ -375,15 +375,15 @@ def flow(sections):
         out += [f'<g class="flow__node flow__part" {data(t, sec, cap)}><circle cx="{x}" cy="{y}" r="9"/><text x="{x}" y="{y + 30}">{esc(t)}</text></g>' for (x, y), (t, cap, _) in zip(spots, nodes)]
         return H, out
 
-    hint = 'Наведите на точку или нажмите на неё — рядом появится, что это.'
+    hint = 'Наведите на любую точку или нажмите на неё — здесь появится, что это.'
     rows = []
     for n, (sec, text, nodes) in enumerate(sections, 1):
         H, body = core(sec, nodes) if n == 2 else fan(sec, nodes, n == 3)
         rows += [f'<section class="flow__row flow__row--{n}">',
-                 f'<div class="flow__text"><p class="graph__label">{n:02d} из {len(sections):02d}</p><h2 class="flow__title">{esc(typo(sec))}</h2><p>{esc(text)}</p>'
-                 + (f'<p class="flow__hint js-only">{esc(hint)}</p>' if n == 1 else '') + '</div>',
+                 f'<div class="flow__text"><p class="graph__label">{n:02d} из {len(sections):02d}</p><h2 class="flow__title">{esc(typo(sec))}</h2><p>{esc(text)}</p>' + '</div>',
                  f'<div class="flow__canvas"><svg viewBox="0 0 {W} {H}" role="img" aria-label="{esc(sec)}: {esc(", ".join(t for t, _, _ in nodes))}">', *body, '</svg></div>',
-                 '<div class="flow__side js-only" aria-live="polite"><span class="graph__label" data-flow-kind></span><p class="flow__caption" data-flow-caption></p></div>',
+                 f'<div class="flow__side js-only" aria-live="polite" data-kind="Что на схеме" data-title="Выберите точку" data-caption="{esc(hint)}">'
+                 f'<span class="graph__label" data-flow-kind>Что на схеме</span><p class="flow__caption" data-flow-caption><strong>Выберите точку</strong>{esc(hint)}</p></div>',
                  '</section>']
     sheet = ('<div class="sheet" data-flow-sheet aria-live="polite"><button class="sheet__close" type="button" aria-label="Закрыть">×</button>'
              '<span class="graph__label" data-sheet-kind></span><strong data-sheet-title></strong><p data-sheet-text></p></div>')

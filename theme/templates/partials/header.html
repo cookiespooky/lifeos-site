@@ -1,11 +1,13 @@
+{{/* Переключатель бокового меню стоит перед шапкой: шапка размывает фон и поэтому держит в себе всё, что закреплено
+     внутри неё, — ящик меню лежит рядом с ней, а не в ней. */}}
+<input class="nav-toggle" type="checkbox" id="nav-toggle" aria-label="Меню" />
 <header class="site-header">
   <div class="container header-inner">
     <a class="logo" href="{{ .BaseURL }}/">
       <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><line x1="6" y1="16" x2="16" y2="6" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="16" r="4" fill="currentColor"/><circle cx="16" cy="6" r="3.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg>
       <span>{{ if .Settings.site_name }}{{ .Settings.site_name }}{{ else }}Life OS{{ end }}</span>
     </a>
-    {{/* Меню сайта: единственное место шаблона, которое у каждого сайта своё. На узком экране открывается кнопкой справа. */}}
-    <input class="nav-toggle" type="checkbox" id="nav-toggle" aria-label="Меню" />
+    {{/* Меню сайта: единственное место шаблона, которое у каждого сайта своё. На узком экране оно — в боковом ящике ниже. */}}
     <nav class="nav">
       <a href="{{ .BaseURL }}/#why">Почему Life OS</a>
       <a href="{{ .BaseURL }}/#how">Как это работает</a>
@@ -18,3 +20,26 @@
     </div>
   </div>
 </header>
+{{/* Боковой ящик меню: выезжает справа поверх страницы и ничего не сдвигает. Закрывается крестиком, нажатием мимо и
+     переходом по ссылке (main.js). */}}
+<label class="drawer__shade" for="nav-toggle" aria-hidden="true"></label>
+<aside class="drawer" data-drawer>
+  <label class="drawer__close" for="nav-toggle" aria-label="Закрыть меню">×</label>
+  <nav class="drawer__nav">
+    <a href="{{ .BaseURL }}/#why">Почему Life OS</a>
+    <a href="{{ .BaseURL }}/#how">Как это работает</a>
+    {{- if .Settings.apply_label }}
+    <a href="{{ .BaseURL }}/#start">{{ .Settings.apply_label }}</a>
+    {{- end }}
+  </nav>
+  <div class="drawer__actions">
+    {{- if .Settings.contact_url }}
+    <a class="btn btn--primary drawer__btn" href="{{ .Settings.contact_url }}"><img src="{{ .AssetsBase }}/logos/telegram.svg" alt="" width="20" height="20" />{{ .Settings.cta_button }}</a>
+    {{- end }}
+    {{- if .Settings.github_url }}
+    <a class="btn drawer__btn" href="{{ .Settings.github_url }}"><img src="{{ .AssetsBase }}/logos/github.svg" alt="" width="20" height="20" />GitHub проекта</a>
+    {{- else }}
+    <span class="btn drawer__btn is-soon" title="Код скоро будет открыт"><img src="{{ .AssetsBase }}/logos/github.svg" alt="" width="20" height="20" />GitHub проекта</span>
+    {{- end }}
+  </div>
+</aside>
