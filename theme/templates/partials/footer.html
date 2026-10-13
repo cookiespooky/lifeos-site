@@ -20,4 +20,7 @@
     </nav>
     <span>{{ .Settings.footer_note }}</span>
   </div>
+  {{- if .Settings.legal_note }}
+  <div class="container"><p class="footer-legal">{{ .Settings.legal_note }}</p></div>
+  {{- end }}
 </footer>

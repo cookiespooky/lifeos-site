@@ -12,8 +12,8 @@ type: flow
 - Соцсети: Сообщения, комментарии и цифры по постам — из каждой сети, которую вы ведёте.
   - Telegram: telegram.svg
   - ВКонтакте: vk.svg
-  - Instagram: instagram.svg
-  - Threads: threads.svg
+  - Instagram*: instagram.svg
+  - Threads*: threads.svg
 - Деньги: Операции по счетам, только чтение. Каждый платёж сопоставляется со сделкой и со счётом, по которому он пришёл.
   - Сбер: sber.png
   - Т-Банк: tbank.png

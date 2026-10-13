@@ -396,6 +396,7 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 /* ---------- меню на узком экране: кнопка справа открывает ссылки ---------- */
 .nav-toggle { position: absolute; opacity: 0; pointer-events: none; }
 .burger { display: none; }
+.footer-legal { padding-bottom: 24px; font-size: 12px; line-height: 1.5; color: var(--ink-3); }   /* сноска к названиям со звёздочкой */
 .footer-nav { display: flex; flex-wrap: wrap; gap: 8px 22px; }
 .footer-nav a:hover { color: var(--ink); }
 @media (min-width: 861px) { .nav { margin-right: auto; } }

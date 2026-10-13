@@ -570,6 +570,9 @@ def main():
         news += [f'## {date_ru(d)}', '', rows_dated(items), '']
     files['chto-novogo.md'] = page('page', 'chto-novogo', 'Что нового', 'Что менялось в системе, по датам. Страница собирается из истории частей.', '\n'.join(news))
 
+    # Названия со сноской: звёздочка встаёт везде, где они названы, — и в текстах из реестра; сама сноска — в подвале
+    # (legal_note в config.yaml). Имена файлов и адреса пишутся строчными и под правило не попадают.
+    files = {name: re.sub(r'\b(Threads|Instagram)\b(?!\*)', r'\1*', text) for name, text in files.items()}
     slugs = {}
     for name, text in files.items():
         slug = re.search(r'^slug: (.*)$', text, re.M).group(1)
