@@ -40,4 +40,6 @@ mkdir -p dist
 "$NOTEPUB_BIN" validate --config ./config.yaml --rules ./rules.yaml --resolve ./.notepub/artifacts/resolve.json --links --markdown
 "$NOTEPUB_BIN" build --config ./config.yaml --rules ./rules.yaml --dist ./dist --artifacts ./.notepub/artifacts
 touch dist/.nojekyll
+cp -R static/. dist/                       # значок и картинка для соцсетей: scripts/brand.py
+python3 scripts/llms.py dist
 echo "Готово: $ROOT_DIR/dist — не закоммичено и не опубликовано"

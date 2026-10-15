@@ -4,7 +4,7 @@ site:
   base_url: "https://lifeos.antonlozhkin.ru/"   # выложен 8.10: scripts/deploy.sh сверяет этот адрес со своим доменом
   title: "Life OS"
   description: "Life OS — рабочая система для своих дел"
-  default_og_image: ""
+  default_og_image: "/og.png"                 # static/og.png, рисует scripts/brand.py
   media_base_url: "https://lifeos.antonlozhkin.ru/media/"
   host: 127.0.0.1
 

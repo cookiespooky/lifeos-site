@@ -34,12 +34,12 @@
   </nav>
   <div class="drawer__actions">
     {{- if .Settings.contact_url }}
-    <a class="btn btn--primary drawer__btn" href="{{ .Settings.contact_url }}"><img src="{{ .AssetsBase }}/logos/telegram.svg" alt="" width="20" height="20" />{{ .Settings.cta_button }}</a>
+    <a class="btn btn--primary drawer__btn" href="{{ .Settings.contact_url }}"><img src="{{ .AssetsBase }}/logos/telegram.svg" alt="Telegram" width="20" height="20" />{{ .Settings.cta_button }}</a>
     {{- end }}
     {{- if .Settings.github_url }}
-    <a class="btn drawer__btn" href="{{ .Settings.github_url }}"><img src="{{ .AssetsBase }}/logos/github.svg" alt="" width="20" height="20" />GitHub проекта</a>
+    <a class="btn drawer__btn" href="{{ .Settings.github_url }}"><img src="{{ .AssetsBase }}/logos/github.svg" alt="GitHub" width="20" height="20" />GitHub проекта</a>
     {{- else }}
-    <span class="btn drawer__btn is-soon" title="Код скоро будет открыт"><img src="{{ .AssetsBase }}/logos/github.svg" alt="" width="20" height="20" />GitHub проекта</span>
+    <span class="btn drawer__btn is-soon" title="Код скоро будет открыт"><img src="{{ .AssetsBase }}/logos/github.svg" alt="GitHub" width="20" height="20" />GitHub проекта</span>
     {{- end }}
   </div>
 </aside>
