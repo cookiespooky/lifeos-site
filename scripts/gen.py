@@ -23,7 +23,7 @@ import html, json, math, os, re, shutil, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC, OUT, DATA = (os.path.join(ROOT, d) for d in ('src', 'content', os.path.join('data', 'components.json')))
-STOP = ['модел', 'нейросет', 'frontmatter', 'деплой', 'скилл', 'дашборд', 'заметк']   # те же части слов, что в реестре (component_stop)
+STOP = ['модел', 'нейросет', 'frontmatter', 'деплой', 'скилл', 'заметк']   # те же части слов, что в реестре (component_stop)
 MONTHS = 'января февраля марта апреля мая июня июля августа сентября октября ноября декабря'.split()
 errors = []
 esc = lambda s: html.escape(str(s), quote=True)
@@ -154,19 +154,21 @@ def tabs(name, items):
 
 
 def chains(text, name):
-    """#### Название / абзац / нумерованный список «Шаг — пояснение» → вкладки."""
+    """#### Название / абзац / нумерованный список «Шаг — пояснение» → вкладки. Строка `<div …>` в блоке — живая схема
+    вкладки: она встаёт в панели первой, над шагами."""
     items = []
     for b in [b for b in re.split(r'^#### ', text, flags=re.M) if b.strip()]:
         title, _, rest = b.partition('\n')
         steps = re.findall(r'^\d+\. (.+)$', rest, re.M)
-        para = ' '.join(l.strip() for l in rest.split('\n') if l.strip() and not re.match(r'\d+\. ', l))
+        fig = ''.join(l.strip() for l in rest.split('\n') if l.strip().startswith('<div'))
+        para = ' '.join(l.strip() for l in rest.split('\n') if l.strip() and not re.match(r'\d+\. ', l) and not l.strip().startswith('<div'))
         if not steps or not para:
             errors.append(f'{name}: цепочка «{title.strip()}» — нужен абзац и нумерованный список шагов')
         li = []
         for n, st in enumerate(steps, 1):
             head, _, note = st.partition(' — ')
             li.append(f'<li class="step"><span class="step__num">{n:02d}</span><div class="step__title">{esc(typo(head))}</div><div class="step__text">{esc(note)}</div></li>')
-        items.append((title.strip(), f'<ol class="steps">{"".join(li)}</ol><p class="tabs__text">{esc(para)}</p>'))
+        items.append((title.strip(), f'{fig}<ol class="steps">{"".join(li)}</ol><p class="tabs__text">{esc(para)}</p>'))
     return tabs('chain', items)
 
 

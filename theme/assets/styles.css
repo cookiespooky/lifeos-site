@@ -513,6 +513,49 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
   .lm--map .lm__side, .lm--ask .lm__side { order: -1; }
   .lm--flow { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.7fr) minmax(0, 0.9fr); }
 }
+/* схема во вкладке «Как это работает»: над шагами, шаги под ней неподвижны */
+.tabs__panel > .lm { margin: 0 0 32px; }
+/* вкладки одной высоты (Антон, 16.10): все панели лежат в одной ячейке, видна выбранная — высота секции по самой
+   высокой. Колонки схемы с запасом на конечное состояние круга, чтобы шаги не сдвигались, пока он идёт (замер
+   16.10 при reduced-motion: справа до 321px от ширины 1100, до 369px на 920, на 400 — до 302px). live.js запускает схему только
+   в видимой панели. */
+.tabs--chain { display: grid; grid-template-columns: minmax(0, 1fr); }
+.tabs--chain > .tabs__bar { grid-row: 1; }
+.tabs--chain > .tabs__panel { display: block; grid-row: 2; grid-column: 1; visibility: hidden; }
+.tabs--chain > .tabs__radio:nth-of-type(1):checked ~ .tabs__panel:nth-of-type(1),
+.tabs--chain > .tabs__radio:nth-of-type(2):checked ~ .tabs__panel:nth-of-type(2),
+.tabs--chain > .tabs__radio:nth-of-type(3):checked ~ .tabs__panel:nth-of-type(3),
+.tabs--chain > .tabs__radio:nth-of-type(4):checked ~ .tabs__panel:nth-of-type(4),
+.tabs--chain > .tabs__radio:nth-of-type(5):checked ~ .tabs__panel:nth-of-type(5),
+.tabs--chain > .tabs__radio:nth-of-type(6):checked ~ .tabs__panel:nth-of-type(6),
+.tabs--chain > .tabs__radio:nth-of-type(7):checked ~ .tabs__panel:nth-of-type(7),
+.tabs--chain > .tabs__radio:nth-of-type(8):checked ~ .tabs__panel:nth-of-type(8) { visibility: visible; }
+@media (min-width: 901px) { .tabs__panel > .lm { min-height: 375px; } }
+@media (min-width: 1100px) { .tabs__panel > .lm { min-height: 325px; } }
+@media (max-width: 900px) {
+  .tabs__panel > .lm { margin-bottom: 40px; }
+  .tabs__panel > .lm > .lm__col:first-child { min-height: 250px; }
+  .tabs__panel > .lm > .lm__col:nth-child(3) { min-height: 320px; }   /* последним в схеме стоит точка .lm__fly */
+}
+/* правая колонка: страница сделки, заготовка документа, карточка идеи */
+.lm__page { display: grid; gap: 8px; margin-top: 12px; font-size: 14px; line-height: 1.45; color: var(--ink); }
+.lm__title { font-weight: 600; min-height: 1.45em; }
+.lm__row { display: grid; gap: 1px; padding-left: 10px; border-left: 2px solid var(--line-strong); transition: border-color 0.35s var(--ease); }
+.lm__k { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-2); }
+.lm__row.is-hit { border-color: var(--link); }
+.lm__row.is-hit .lm__v { color: var(--link); }
+.lm__row.is-miss .lm__v { color: var(--muted); font-style: italic; }
+.lm__kicker--sub { margin-top: 22px; }
+.lm__today--short { min-height: 0; }
+.lm__file { margin-top: 14px; font-family: var(--font-mono); font-size: 12px; color: var(--link); opacity: 0; transition: opacity 0.4s var(--ease); min-height: 1.4em; }
+.lm__file.is-in { opacity: 1; }
+.lm__status { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--link); min-height: 1.4em; }
+.lm__args { display: grid; gap: 8px; }
+.lm__arg { display: grid; gap: 1px; padding-left: 10px; border-left: 2px solid var(--ink); animation: lm-in 0.4s var(--ease) both; }
+.lm__arg--con { border-left-style: dashed; border-left-color: var(--muted-2); }
+.lm__test { display: grid; gap: 8px; }
+.lm__test .lm__row { animation: lm-in 0.4s var(--ease) both; border-color: var(--link); }
+.lm__node--idea circle { fill: var(--paper); stroke: var(--link); stroke-width: 2; }
 @keyframes lm-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
 @keyframes lm-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (max-width: 900px) {

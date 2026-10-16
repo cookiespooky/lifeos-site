@@ -1,7 +1,8 @@
-// Живая схема «как это работает»: выдуманная мастерская, в которую приходит сообщение, письмо и документ.
-// Взят с antonlozhkin.ru (site/theme/templates/partials/line-live.html). С 13.10 третья схема здесь своя: точка обегает
-// записи по связям и ставит поручение (EVENTS и play) — при новом переносе с того сайта эту часть не затирать.
-// Из трёх её состояний здесь стоит одно: <div class="lm lm--flow" data-lm="flow"> в src/home.md. Без скрипта схемы нет.
+// Живые схемы «как это работает»: выдуманная мастерская, в которой идут пять процессов — по вкладке на каждый
+// (<div class="lm lm--flow" data-lm="flow|deal|doc|idea|ask"> в src/home.md, gen.py кладёт схему над шагами вкладки).
+// Граф и первая схема взяты с antonlozhkin.ru (site/theme/templates/partials/line-live.html); с 13.10 и 16.10 всё ниже
+// карты (scene и пять схем) здесь своё — при новом переносе с того сайта эту часть не затирать. map не стоит нигде.
+// Без скрипта схем нет.
 (function () {
   var boxes = document.querySelectorAll('[data-lm]');
   if (!boxes.length) return;
@@ -36,23 +37,25 @@
     new IntersectionObserver(function (es) { es.forEach(function (e) { fn(e.isIntersecting); }); }, { threshold: 0.35 }).observe(node);
   }
 
-  /* Граф: возвращает узлы по id и способы их двигать и подсвечивать. */
-  function graph(host) {
+  /* Граф: возвращает узлы по id и способы их двигать и подсвечивать. extra — точки и связи, которых нет в общей карте:
+     они появляются только в своей схеме (reveal) и гаснут вместе с её кругом (conceal). */
+  function graph(host, extra) {
+    var nodes = NODES.concat(extra ? extra.nodes : []), links = EDGES.concat(extra ? extra.edges : []);
     var s = svg('svg', { 'class': 'lm__svg', viewBox: '0 ' + TOP + ' ' + W + ' ' + (H - TOP - 28), role: 'img', 'aria-label': 'Карта выдуманной мастерской: две сделки, заказчики, счета и документы' });
     var gE = svg('g', {}), gN = svg('g', {});
     s.appendChild(gE); s.appendChild(gN); host.appendChild(s);
     var by = {}, edges = [];
-    NODES.forEach(function (n) {
+    nodes.forEach(function (n) {
       var g = svg('g', { 'class': 'lm__node lm__node--' + n.k + (n.open ? ' is-open' : ''), tabindex: '0' });
       var r = n.k === 'deal' ? 9 : 6;
       g.appendChild(svg('circle', { r: r }));
       var t = svg('text', { y: r + 15, 'text-anchor': 'middle' }); t.textContent = n.t; g.appendChild(t);
       gN.appendChild(g);
-      by[n.id] = { n: n, g: g, text: t, x: n.x, y: n.y, near: [] };
+      by[n.id] = { n: n, g: g, text: t, x: n.x, y: n.y, near: [], extra: !!extra && extra.nodes.indexOf(n) >= 0 };
     });
-    EDGES.forEach(function (p) {
+    links.forEach(function (p) {
       var l = svg('line', { 'class': 'lm__edge' + (p[0] === 'a1' || p[1] === 'a1' ? ' lm__edge--gap' : '') });
-      gE.appendChild(l); edges.push({ a: by[p[0]], b: by[p[1]], l: l });
+      gE.appendChild(l); edges.push({ a: by[p[0]], b: by[p[1]], l: l, extra: by[p[0]].extra || by[p[1]].extra });
       by[p[0]].near.push(p[1]); by[p[1]].near.push(p[0]);
     });
     function draw() {
@@ -83,8 +86,8 @@
       edges.forEach(function (e) { e.l.classList.add('is-hid'); e.l.style.cssText = ''; });
     }
     function showAll() {
-      for (var id in by) by[id].g.classList.remove('is-hid');
-      edges.forEach(function (e) { e.l.classList.remove('is-hid'); e.l.style.cssText = ''; });
+      for (var id in by) by[id].g.classList.toggle('is-hid', by[id].extra);
+      edges.forEach(function (e) { e.l.classList.toggle('is-hid', e.extra); e.l.style.cssText = ''; });
     }
     function grow(e, fromId, later) {
       var L = Math.sqrt(Math.pow(e.a.x - e.b.x, 2) + Math.pow(e.a.y - e.b.y, 2)), l = e.l;
@@ -98,16 +101,25 @@
       hideAll();
       mains.forEach(function (id) { later(function () { by[id].g.classList.remove('is-hid'); }, t); t += 450; });
       mains.forEach(function (id) {
-        later(function () { edges.forEach(function (e) { if ((e.a.n.id === id || e.b.n.id === id) && e.l.classList.contains('is-hid')) grow(e, id, later); }); }, t);
+        later(function () { edges.forEach(function (e) { if (!e.extra && (e.a.n.id === id || e.b.n.id === id) && e.l.classList.contains('is-hid')) grow(e, id, later); }); }, t);
         t += 500;
-        later(function () { by[id].near.forEach(function (n) { by[n].g.classList.remove('is-hid'); }); }, t);
+        later(function () { by[id].near.forEach(function (n) { if (!by[n].extra) by[n].g.classList.remove('is-hid'); }); }, t);
         t += 450;
       });
-      later(function () { edges.forEach(function (e) { if (e.l.classList.contains('is-hid')) grow(e, e.a.n.id, later); }); }, t);
+      later(function () { edges.forEach(function (e) { if (!e.extra && e.l.classList.contains('is-hid')) grow(e, e.a.n.id, later); }); }, t);
       later(function () { showAll(); if (done) done(); }, t + 750);
     }
+    /* своя точка схемы появляется, и от неё растут её связи */
+    function reveal(id, later) {
+      by[id].g.classList.remove('is-hid');
+      edges.forEach(function (e) { if ((e.a.n.id === id || e.b.n.id === id) && e.l.classList.contains('is-hid')) { if (still) e.l.classList.remove('is-hid'); else grow(e, id, later); } });
+    }
+    function conceal() {
+      for (var id in by) if (by[id].extra) by[id].g.classList.add('is-hid');
+      edges.forEach(function (e) { if (e.extra) { e.l.classList.add('is-hid'); e.l.style.cssText = ''; } });
+    }
     draw();
-    return { svg: s, by: by, draw: draw, light: light, move: move, build: build, hideAll: hideAll, showAll: showAll };
+    return { svg: s, by: by, draw: draw, light: light, move: move, build: build, hideAll: hideAll, showAll: showAll, reveal: reveal, conceal: conceal };
   }
   function home() { var o = {}; NODES.forEach(function (n) { o[n.id] = [n.x, n.y]; }); return o; }
   function legend(host) {
@@ -146,194 +158,396 @@
     whenSeen(box, function (seen) { if (seen && !played) { played = true; setTimeout(function () { set(true, 1300); }, 700); } });
   }
 
-  /* ---------- 2. вопрос к карте ---------- */
-  var QUESTIONS = [
-    { q: 'Кто нам должен?', path: ['i2', 'd1', 'c1', 'i3', 'd2', 'c2'],
-      a: 'Кафе «Север» — 84 000 ₽ по счёту № 17, выставлен 3 октября. Отель «Берег» — аванс 150 000 ₽ по счёту № 21, срок 13 октября.' },
-    { q: 'Чего не хватает по кафе?', path: ['c1', 'd1', 'a1', 'i2'],
-      a: 'Акта: монтаж закончен 3 октября, а документа нет. И оплаты по счёту № 17.' },
-    { q: 'Олег свободен с 14-го?', path: ['p2', 'd2', 'k2', 'c2'],
-      a: 'Нет: с 14 октября он на монтаже в отеле «Берег» — так записано в сделке «Мебель в номера».' }
-  ];
-  function initAsk(box) {
-    var fig = el('div', 'lm__fig'), side = el('div', 'lm__side');
-    box.appendChild(fig); box.appendChild(side);
-    var G = graph(fig);
-    side.appendChild(el('div', 'lm__kicker', 'Пример · спросите у карты'));
-    var qs = el('div', 'lm__qs'); side.appendChild(qs);
-    var ans = el('p', 'lm__ans'), refs = el('div', 'lm__refs'); side.appendChild(ans); side.appendChild(refs);
-    var run = 0, btns = [];
-    /* одна точка ведёт взгляд: от нажатого вопроса — в граф, по записям пути, от последней — к ответу */
+
+  /* ---------- вкладки «Как это работает»: пять схем в одной раскладке ----------
+     Слева — что пришло или что вы сделали, в середине — карта мастерской, справа — что из этого получилось.
+     Одна точка ведёт взгляд. Шаги под схемой стоят неподвижно (Антон, 16.10). Карта вырастает один раз
+     на страницу, в первой показанной схеме; остальные открываются с готовой картой — мастерская та же. */
+  var grown = false;
+  function scene(box, inKick, outKick, extra) {
+    var inc = el('div', 'lm__col'), fig = el('div', 'lm__fig'), out = el('div', 'lm__col');
+    box.appendChild(inc); box.appendChild(fig); box.appendChild(out);
+    inc.appendChild(el('div', 'lm__kicker', inKick));
+    var inbox = el('div', 'lm__inbox'); inc.appendChild(inbox);
+    var G = graph(fig, extra);
+    out.appendChild(el('div', 'lm__kicker', outKick));
     var dot = el('span', 'lm__fly'); box.appendChild(dot);
-    function at(node, how) {
+    var S = { box: box, inbox: inbox, out: out, G: G, dot: dot, run: 0, timers: [] };
+    S.later = function (fn, ms) { var me = S.run; S.timers.push(setTimeout(function () { if (me === S.run) fn(); }, ms)); };
+    /* точка в координатах схемы: середина узла, левый край карточки, буллет строки */
+    S.at = function (node, how) {
       var b = box.getBoundingClientRect(), r = node.getBoundingClientRect();
-      if (how === 'start') return [r.left - b.left - 2, r.top - b.top + 12];
+      if (how === 'bullet') return [r.left - b.left + 3, r.top - b.top + 11];
+      if (how === 'card') return [r.left - b.left, r.top - b.top + r.height / 2];
       if (how === 'end') return [r.right - b.left + 10, r.top - b.top + r.height / 2];
       return [r.left - b.left + r.width / 2, r.top - b.top + r.height / 2];
-    }
-    function fly(me, from, to, ms, done) {
-      var t0 = null;
+    };
+    S.node = function (id) { return S.at(G.by[id].g.querySelector('circle')); };
+    S.fly = function (from, to, ms, done) {
+      var me = S.run, t0 = null;
       dot.style.opacity = 1;
       (function f(t) {
-        if (me !== run) return;
+        if (me !== S.run) return;
         if (t0 === null) t0 = t;
         var k = Math.min(1, (t - t0) / ms), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
         dot.style.transform = 'translate(' + (from[0] + (to[0] - from[0]) * e - 5) + 'px,' + (from[1] + (to[1] - from[1]) * e - 5) + 'px)';
         if (k < 1) requestAnimationFrame(f); else done();
       })(performance.now());
-    }
-    function ask(i) {
-      var Q = QUESTIONS[i], me = ++run, lit = [];
-      btns.forEach(function (b, j) { b.classList.toggle('is-on', j === i); });
-      ans.textContent = ''; ans.classList.remove('is-in'); refs.textContent = ''; G.light([]); dot.style.opacity = 0;
-      function finish() {
-        ans.textContent = Q.a; ans.classList.add('is-in');
-        refs.appendChild(el('span', 'lm__refs-t', 'по записям:'));
-        Q.path.forEach(function (id) { refs.appendChild(el('span', 'lm__ref', G.by[id].n.t)); });
-      }
-      if (still) { G.light(Q.path); finish(); return; }
-      function circle(id) { return G.by[id].g.querySelector('circle'); }
-      (function next(k, from) {
-        if (me !== run) return;
-        if (k >= Q.path.length) {
-          fly(me, from, at(ans, 'start'), 650, function () { dot.style.opacity = 0; finish(); });
-          return;
-        }
-        var to = at(circle(Q.path[k]));
-        fly(me, from, to, k ? 380 : 700, function () {
-          lit.push(Q.path[k]); G.light(lit.slice());
-          setTimeout(function () { next(k + 1, to); }, 160);
+    };
+    S.hide = function () { dot.style.opacity = 0; };
+    /* точка обегает записи по очереди, каждая загорается; at(id) — что сделать, когда точка на ней; done(где точка) */
+    S.walk = function (path, from, at, done) {
+      var lit = [];
+      (function next(k, p) {
+        if (k >= path.length) { done(p); return; }
+        var to = S.node(path[k]);
+        S.fly(p, to, k ? 480 : 750, function () {
+          lit.push(path[k]); G.light(lit.slice());
+          if (at) at(path[k]);
+          S.later(function () { next(k + 1, to); }, 300);
         });
-      })(0, at(btns[i], 'end'));
-    }
-    QUESTIONS.forEach(function (Q, i) {
-      var b = el('button', 'lm__q', Q.q); b.type = 'button'; b.addEventListener('click', function () { ask(i); }); qs.appendChild(b); btns.push(b);
-    });
-    var played = false;
-    whenSeen(box, function (seen) { if (seen && !played) { played = true; ask(0); } });
+      })(0, from);
+    };
+    S.card = function (src, who, text) {
+      var c = el('div', 'lm__msg');
+      c.appendChild(el('span', 'lm__msg-src', src)); c.appendChild(el('b', '', who)); c.appendChild(el('span', '', text));
+      inbox.appendChild(c); return c;
+    };
+    /* текст гаснет, появляется другой */
+    S.swap = function (t, text, done) {
+      if (still) { t.textContent = text; if (done) done(); return; }
+      t.classList.add('is-out');
+      S.later(function () { t.textContent = text; t.classList.remove('is-out'); if (done) S.later(done, 350); }, 350);
+    };
+    /* круг схемы: start(cycle) играет её от пустого состояния reset; в конце схема гаснет и начинается заново */
+    S.loop = function (reset, start, final) {
+      function stop() { S.run++; S.timers.forEach(clearTimeout); S.timers = []; S.hide(); }
+      function cycle() {
+        reset(); box.classList.remove('is-fade');
+        if (grown) { G.showAll(); S.later(function () { start(again); }, 600); return; }
+        grown = true; G.build(S.later, function () { S.later(function () { start(again); }, 500); });
+      }
+      function again() { box.classList.add('is-fade'); S.later(cycle, 800); }
+      reset();
+      if (still) { G.showAll(); final(); return; }
+      G.hideAll();
+      /* схема идёт, когда она на экране и её вкладка выбрана: невыбранные панели лежат под выбранной скрытыми
+         (visibility, не display — styles.css, «вкладки одной высоты»), а наблюдатель видимость не замечает, поэтому
+         переключение вкладки — свой сигнал. Перезапуск — только когда схема была скрыта и снова видна. */
+      var panel = box.closest ? box.closest('.tabs__panel') : null, tabs = panel ? panel.parentNode : null;
+      var seen = false, shown = false;
+      function check() {
+        var on = seen && (!panel || getComputedStyle(panel).visibility === 'visible');
+        if (on === shown) return; shown = on; stop(); if (on) cycle();
+      }
+      whenSeen(box, function (v) { seen = v; check(); });
+      if (tabs) tabs.addEventListener('change', check);
+    };
+    return S;
+  }
+  /* строки справа: пункты дашборда, поля сделки или документа */
+  function row(host, cls, label, value) {
+    var r = el('div', cls); r.appendChild(el('span', 'lm__k', label));
+    var v = el('span', 'lm__t lm__v', value); r.appendChild(v); host.appendChild(r); return v;
   }
 
-  /* ---------- 3. входящее само попадает в карту и на страницу «Сегодня» ---------- */
+  /* ---------- Сообщение: входящее само попадает в карту и на дашборд ---------- */
   var TODAY = [
-    { id: 't1', t: 'Счёт № 17 не оплачен — 84 000 ₽' },
+    { id: 't1', t: 'Счёт № 17 не оплачен — 84 000 ₽' },
     { id: 't2', t: 'По кафе «Север» нет акта' },
-    { id: 't3', t: 'Счёт № 21: срок оплаты завтра' }
+    { id: 't3', t: 'Счёт № 21: срок оплаты завтра' }
   ];
   /* path — записи, которые точка обегает по связям и зажигает по очереди (первая — та, которой касается входящее);
-     task — поручение, которое после этого встаёт отдельной строкой в «Сегодня». */
+     task — поручение, которое после этого встаёт отдельной строкой на дашборде. */
   var EVENTS = [
     { src: 'Telegram', who: 'Марина', text: 'Север оплатил семнадцатый, пришло 84 000', node: 'i2', path: ['i2', 'd1', 'c1'], done: 't1', kind: 'paid', note: 'Счёт № 17 оплачен' },
     { src: 'Почта', who: 'Фабрика', text: 'Отгрузку для отеля переносим на 16-е', node: 's1', path: ['s1', 'd2', 'p2'], add: 'Отель: отгрузка 16-го, а монтаж назначен на 14-е', task: 'Олегу: перенести монтаж в отеле на 16-е', note: 'Мебель в номера: отгрузка 16 октября' },
     { src: 'Документ', who: 'Акт_кафе_Север.pdf', text: 'подписан обеими сторонами', node: 'a1', path: ['a1', 'd1', 'c1'], done: 't2', kind: 'filled', note: 'Акт по кафе получен' }
   ];
   function initFlow(box) {
-    var inc = el('div', 'lm__col'), fig = el('div', 'lm__fig'), out = el('div', 'lm__col');
-    box.appendChild(inc); box.appendChild(fig); box.appendChild(out);
-    inc.appendChild(el('div', 'lm__kicker', 'Что приходит'));
-    var inbox = el('div', 'lm__inbox'); inc.appendChild(inbox);
-    var G = graph(fig);
-    out.appendChild(el('div', 'lm__kicker', 'Сегодня'));
-    var list = el('ul', 'lm__today'); out.appendChild(list);
-    /* одна точка на всю схему: от пришедшего — к записи на карте, от неё — к строке «Сегодня». Глаз ведут по одному пути. */
-    var dot = el('span', 'lm__fly'); box.appendChild(dot);
-    var timers = [], run = 0, step = 0;
-    function later(fn, ms) { var me = run; timers.push(setTimeout(function () { if (me === run) fn(); }, ms)); }
+    var S = scene(box, 'Что приходит', 'Дашборд'), G = S.G;
+    var list = el('ul', 'lm__today'); S.out.appendChild(list);
     function item(text, id) {
       var li = el('li'); if (id) li.setAttribute('data-id', id);
       li.appendChild(el('span', 'lm__t', text)); list.appendChild(li); return li;
     }
     function reset() {
-      inbox.textContent = ''; list.textContent = ''; dot.style.opacity = 0;
+      S.inbox.textContent = ''; list.textContent = '';
       TODAY.forEach(function (t) { item(t.t, t.id); });
       ['i2', 'a1'].forEach(function (id) { G.by[id].g.classList.remove('is-paid', 'is-filled'); });
       G.light(null);
     }
-    /* точка в координатах схемы: середина узла, левый край карточки, буллет строки */
-    function at(node, how) {
-      var b = box.getBoundingClientRect(), r = node.getBoundingClientRect();
-      if (how === 'bullet') return [r.left - b.left + 3, r.top - b.top + 11];
-      if (how === 'card') return [r.left - b.left, r.top - b.top + r.height / 2];
-      return [r.left - b.left + r.width / 2, r.top - b.top + r.height / 2];
-    }
-    function fly(from, to, ms, done) {
-      var me = run, t0 = null;
-      dot.style.opacity = 1;
-      (function f(t) {
-        if (me !== run) return;
-        if (t0 === null) t0 = t;
-        var k = Math.min(1, (t - t0) / ms), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-        dot.style.transform = 'translate(' + (from[0] + (to[0] - from[0]) * e - 5) + 'px,' + (from[1] + (to[1] - from[1]) * e - 5) + 'px)';
-        if (k < 1) requestAnimationFrame(f); else done();
-      })(performance.now());
-    }
-    /* текст строки гаснет, появляется другой: swap(строка, текст, класс строки, что дальше) */
-    function swap(li, text, cls, done) {
-      var t = li.querySelector('.lm__t');
-      t.classList.add('is-out');
-      later(function () { t.textContent = text; li.className = cls; t.classList.remove('is-out'); if (done) later(done, 350); }, 350);
-    }
-    function mark(E) { var b = G.by[E.node]; if (E.kind) b.g.classList.add('is-' + E.kind); }
-    function play(E) {
-      var card = el('div', 'lm__msg');
-      card.appendChild(el('span', 'lm__msg-src', E.src)); card.appendChild(el('b', '', E.who)); card.appendChild(el('span', '', E.text));
-      inbox.appendChild(card);
-      var path = E.path || [E.node], lit = [];
-      function circle(id) { return G.by[id].g.querySelector('circle'); }
+    function mark(E) { if (E.kind) G.by[E.node].g.classList.add('is-' + E.kind); }
+    function play(E, done) {
+      
+      var card = S.card(E.src, E.who, E.text);
       var li = E.done ? list.querySelector('[data-id="' + E.done + '"]') : item(E.add);
-      var was = li.querySelector('.lm__t').textContent;
+      var t = li.querySelector('.lm__t'), was = t.textContent;
       if (E.add) li.className = 'is-wait';
       var task = E.task ? item(E.task) : null;
       if (task) task.className = 'is-wait';
-      /* от последней записи — к строке «Сегодня»; если из входящего следует поручение, точка ставит и его */
-      function finish(from) {
-        fly(from, at(li, 'bullet'), 750, function () {
-          G.light(null);
-          if (E.add) li.className = 'is-new';
-          else swap(li, 'Записано: ' + E.note, 'is-hit', function () { later(function () { swap(li, was, 'is-done'); }, 1500); });
-          if (!task) { dot.style.opacity = 0; return; }
-          later(function () {
-            fly(at(li, 'bullet'), at(task, 'bullet'), 450, function () { dot.style.opacity = 0; task.className = 'is-new'; });
+      S.later(function () {
+        
+        S.walk(E.path, S.at(card, 'card'), null, function (from) {
+          mark(E);
+          /* от последней записи — к строке дашборда; если из входящего следует поручение, точка ставит и его */
+          S.later(function () {
+            
+            S.fly(from, S.at(li, 'bullet'), 750, function () {
+              G.light(null);
+              if (E.add) li.className = 'is-new';
+              else { li.className = 'is-hit'; S.swap(t, 'Записано: ' + E.note, function () { S.later(function () { li.className = 'is-done'; S.swap(t, was); }, 1500); }); }
+              if (!task) { S.hide(); S.later(done, 3200); return; }
+              S.later(function () {
+                S.fly(S.at(li, 'bullet'), S.at(task, 'bullet'), 450, function () { S.hide(); task.className = 'is-new'; S.later(done, 3200); });
+              }, 500);
+            });
           }, 500);
         });
-      }
-      /* точка идёт от пришедшего к первой записи и дальше по связям: каждая запись и связь к ней загораются */
-      later(function () {
-        (function next(k, from) {
-          if (k >= path.length) { later(function () { finish(from); }, 350); return; }
-          var to = at(circle(path[k]));
-          fly(from, to, k ? 480 : 750, function () {
-            lit.push(path[k]); G.light(lit.slice());
-            if (path[k] === E.node) mark(E);
-            later(function () { next(k + 1, to); }, 300);
-          });
-        })(0, at(card, 'card'));
       }, 500);
     }
-    function tick() {
-      if (step >= EVENTS.length) { box.classList.add('is-fade'); later(cycle, 800); return; }
-      play(EVENTS[step]); step++;
-      later(tick, step >= EVENTS.length ? 9500 : 7000);
-    }
-    /* круг: граф вырастает, проходят три события, всё гаснет */
-    function cycle() { step = 0; reset(); box.classList.remove('is-fade'); G.build(later, function () { later(tick, 500); }); }
-    reset();
-    if (!still) G.hideAll();
-    if (still) {
+    S.loop(reset, function (again) {
+      (function next(k) { if (k >= EVENTS.length) { S.later(again, 2500); return; } play(EVENTS[k], function () { next(k + 1); }); })(0);
+    }, function () {
       EVENTS.forEach(function (E) {
-        var card = el('div', 'lm__msg');
-        card.appendChild(el('span', 'lm__msg-src', E.src)); card.appendChild(el('b', '', E.who)); card.appendChild(el('span', '', E.text));
-        inbox.appendChild(card); mark(E);
+        S.card(E.src, E.who, E.text); mark(E);
         if (E.done) list.querySelector('[data-id="' + E.done + '"]').className = 'is-done'; else item(E.add).className = 'is-new';
         if (E.task) item(E.task).className = 'is-new';
       });
-      return;
-    }
-    whenSeen(box, function (on) {
-      run++; timers.forEach(clearTimeout); timers = [];
-      if (on) cycle();
     });
   }
 
-  var INIT = { map: initMap, ask: initAsk, flow: initFlow };
+  /* ---------- Сделка: каждое пришедшее — своей записью, страница сделки пересчитывается из записей ---------- */
+  var DEAL_X = {
+    nodes: [{ id: 'x1', k: 'money', x: 452, y: 262, t: 'Платёж' }, { id: 'x2', k: 'doc', x: 512, y: 78, t: 'Накладная' }],
+    edges: [['x1', 'i3'], ['x1', 'd2'], ['x2', 'd2'], ['x2', 's1']]
+  };
+  function initDeal(box) {
+    var S = scene(box, 'Что вы переслали', 'Сделка', DEAL_X), G = S.G;
+    var page = el('div', 'lm__page'); S.out.appendChild(page);
+    page.appendChild(el('b', 'lm__title', 'Мебель в номера'));
+    row(page, 'lm__row', 'По договору', '300 000 ₽');
+    var paid = row(page, 'lm__row', 'Оплачено', '0 ₽'), ship = row(page, 'lm__row', 'Отгружено', 'ничего');
+    row(page, 'lm__row is-miss', 'Маржа', 'не посчитана: нет счёта фабрики');
+    S.out.appendChild(el('div', 'lm__kicker lm__kicker--sub', 'Дашборд'));
+    var list = el('ul', 'lm__today lm__today--short'); S.out.appendChild(list);
+    function reset() {
+      S.inbox.textContent = ''; list.textContent = ''; G.conceal(); G.light(null);
+      G.by.i3.g.classList.remove('is-paid');
+      paid.textContent = '0 ₽'; ship.textContent = 'ничего';
+      [paid, ship].forEach(function (v) { v.parentNode.classList.remove('is-hit'); });
+    }
+    function line(text) { var li = el('li', 'is-new'); li.appendChild(el('span', 'lm__t', text)); list.appendChild(li); return li; }
+    /* пришедшее → новая запись на карте → записи, к которым она относится → строка страницы сделки */
+    function play(src, who, text, id, path, v, value, done) {
+      
+      var card = S.card(src, who, text);
+      S.later(function () {
+        
+        S.fly(S.at(card, 'card'), S.node(id), 750, function () {
+          G.reveal(id, S.later); G.light([id]);
+          S.later(function () {
+            S.walk(path, S.node(id), function (n) { if (n === 'i3') G.by.i3.g.classList.add('is-paid'); }, function (from) {
+              G.light([id].concat(path));
+              S.later(function () {
+                
+                S.fly(from, S.at(v.parentNode, 'card'), 700, function () {
+                  S.hide(); v.parentNode.classList.add('is-hit'); S.swap(v, value, function () { S.later(done, 900); });
+                });
+              }, 300);
+            });
+          }, 500);
+        });
+      }, 500);
+    }
+    S.loop(reset, function (again) {
+      play('Почта', 'Отель «Берег»', 'Платёжное поручение: аванс 150 000 ₽ по счёту № 21', 'x1', ['i3', 'd2'], paid, '150 000 ₽', function () {
+        play('Почта', 'Фабрика', 'Накладная: отгружено 2 позиции из 3', 'x2', ['d2'], ship, '2 позиции из 3', function () {
+          
+          var li = line('Мебель в номера: не отгружена 1 позиция из 3'); li.className = 'is-wait';
+          S.fly(S.at(ship.parentNode, 'card'), S.at(li, 'bullet'), 650, function () { S.hide(); G.light(null); li.className = 'is-new'; S.later(again, 4500); });
+        });
+      });
+    }, function () {
+      S.card('Почта', 'Отель «Берег»', 'Платёжное поручение: аванс 150 000 ₽ по счёту № 21');
+      S.card('Почта', 'Фабрика', 'Накладная: отгружено 2 позиции из 3');
+      G.reveal('x1'); G.reveal('x2'); G.by.i3.g.classList.add('is-paid');
+      paid.textContent = '150 000 ₽'; ship.textContent = '2 позиции из 3';
+      line('Мебель в номера: не отгружена 1 позиция из 3');
+    });
+  }
+
+  /* ---------- Документ: шаблон и записи → проверка полей → файл; чего нет — называет и ждёт ---------- */
+  var DOC_FIELDS = [['work', 'Работы', 'd1', 'монтаж кухни, 3 октября'], ['sum', 'Сумма', 'i2', '204 000 ₽ по счетам № 14 и 17'],
+                    ['base', 'Основание', 'k1', 'договор от 5 сентября'], ['who', 'Заказчик', 'c1', 'кафе «Север»'], ['kpp', 'КПП заказчика', null, '']];
+  function initDoc(box) {
+    var S = scene(box, 'Что вы попросили', 'Документ'), G = S.G;
+    var page = el('div', 'lm__page'); S.out.appendChild(page);
+    page.appendChild(el('b', 'lm__title', 'Акт к договору с кафе'));
+    var f = {}; DOC_FIELDS.forEach(function (d) { f[d[0]] = row(page, 'lm__row', d[1], '…'); });
+    var file = el('div', 'lm__file'); S.out.appendChild(file);
+    function reset() {
+      S.inbox.textContent = ''; G.light(null); G.by.a1.g.classList.remove('is-filled');
+      DOC_FIELDS.forEach(function (d) { f[d[0]].textContent = '…'; f[d[0]].parentNode.className = 'lm__row'; });
+      file.textContent = ''; file.classList.remove('is-in');
+    }
+    function fill(n) {
+      DOC_FIELDS.forEach(function (d) { if (d[2] === n) { f[d[0]].parentNode.className = 'lm__row is-hit'; S.swap(f[d[0]], d[3]); } });
+    }
+    function done() {
+      file.textContent = 'Акт_кафе_Север.pdf — готов к отправке'; file.classList.add('is-in');
+      G.by.a1.g.classList.add('is-filled');
+    }
+    S.loop(reset, function (again) {
+      
+      var card = S.card('Вы', 'Акт для кафе «Север»', 'по сделке «Кухня для кафе»');
+      S.later(function () {
+        
+        /* от пустого места «Акт» — по записям, из которых берутся поля */
+        S.walk(['a1', 'd1', 'i1', 'i2', 'k1', 'c1'], S.at(card, 'card'), fill, function (from) {
+          S.later(function () {
+            
+            var kpp = f.kpp.parentNode;
+            S.fly(from, S.at(kpp, 'card'), 650, function () {
+              S.hide(); kpp.className = 'lm__row is-miss'; S.swap(f.kpp, 'нет в записи о кафе — спросите');
+              S.later(function () {
+                var reply = S.card('Telegram', 'Марина', 'КПП кафе: 780101001');
+                S.later(function () {
+                  S.walk(['c1'], S.at(reply, 'card'), null, function (p) {
+                    S.fly(p, S.at(kpp, 'card'), 650, function () {
+                      kpp.className = 'lm__row is-hit'; S.swap(f.kpp, '780101001', function () {
+                        
+                        S.fly(S.at(kpp, 'card'), S.at(file, 'card'), 500, function () { S.hide(); G.light(null); done(); S.later(again, 4500); });
+                      });
+                    });
+                  });
+                }, 600);
+              }, 1600);
+            });
+          }, 400);
+        });
+      }, 500);
+    }, function () {
+      S.card('Вы', 'Акт для кафе «Север»', 'по сделке «Кухня для кафе»');
+      S.card('Telegram', 'Марина', 'КПП кафе: 780101001');
+      DOC_FIELDS.forEach(function (d) { f[d[0]].textContent = d[3] || '780101001'; });
+      done();
+    });
+  }
+
+  /* ---------- Идея: мысль → доводы с датой и автором, из записей и от людей → предположение со сроком ---------- */
+  var IDEA_X = { nodes: [{ id: 'x3', k: 'idea', x: 40, y: 206, t: 'Предоплата 50%' }], edges: [['x3', 'i2'], ['x3', 'c1']] };
+  function initIdea(box) {
+    var S = scene(box, 'Что вы записали', 'Идея', IDEA_X), G = S.G;
+    var page = el('div', 'lm__page'); S.out.appendChild(page);
+    var status = el('span', 'lm__t lm__status', ''); page.appendChild(status);
+    var title = el('b', 'lm__title', ''); page.appendChild(title);
+    var args = el('div', 'lm__args'); page.appendChild(args);
+    var test = el('div', 'lm__test'); page.appendChild(test);
+    function reset() {
+      S.inbox.textContent = ''; G.conceal(); G.light(null);
+      status.textContent = ''; title.textContent = ''; args.textContent = ''; test.textContent = ''; page.classList.remove('is-test');
+    }
+    function arg(side, meta, text) {
+      var a = el('div', 'lm__arg lm__arg--' + (side === 'за' ? 'pro' : 'con'));
+      a.appendChild(el('span', 'lm__k', side + ' · ' + meta)); a.appendChild(el('span', '', text)); args.appendChild(a); return a;
+    }
+    function hypothesis() {
+      page.classList.add('is-test');
+      row(test, 'lm__row', 'Срок', '1 декабря');
+      row(test, 'lm__row', 'Неверно, если', 'двое из трёх новых заказчиков откажутся из-за предоплаты');
+    }
+    var PRO = ['13.10 · по записям', 'Счёт № 17 не оплачен, хотя монтаж сдан 3 октября'];
+    var CON = ['14.10 · Марина', 'Кафе «Север» платит только после работ — с предоплатой бы не пошло'];
+    S.loop(reset, function (again) {
+      
+      var card = S.card('Вы', 'Мысль', 'Брать 50% предоплаты за монтаж');
+      S.later(function () {
+        S.fly(S.at(card, 'card'), S.node('x3'), 750, function () {
+          G.reveal('x3', S.later); G.light(['x3']);
+          status.textContent = 'идея'; title.textContent = 'Брать 50% предоплаты за монтаж';
+          S.later(function () {
+            
+            /* довод из записей: система сама находит, что относится к мысли */
+            S.walk(['i2'], S.node('x3'), null, function (p) {
+              S.fly(p, S.at(args, 'card'), 650, function () {
+                S.hide(); arg('за', PRO[0], PRO[1]);
+                S.later(function () {
+                  var reply = S.card('Telegram', 'Марина', 'Север бы не пошёл: они платят только после работ');
+                  S.later(function () {
+                    S.walk(['c1', 'x3'], S.at(reply, 'card'), null, function (p2) {
+                      S.fly(p2, S.at(args, 'card'), 650, function () {
+                        S.hide(); arg('против', CON[0], CON[1]);
+                        S.later(function () {
+                          G.light(['x3', 'i2', 'c1']);
+                          S.swap(status, 'предположение', hypothesis);
+                          S.later(function () { G.light(null); again(); }, 6000);
+                        }, 1800);
+                      });
+                    });
+                  }, 600);
+                }, 1500);
+              });
+            });
+          }, 900);
+        });
+      }, 500);
+    }, function () {
+      S.card('Вы', 'Мысль', 'Брать 50% предоплаты за монтаж');
+      S.card('Telegram', 'Марина', 'Север бы не пошёл: они платят только после работ');
+      G.reveal('x3');
+      status.textContent = 'предположение'; title.textContent = 'Брать 50% предоплаты за монтаж';
+      arg('за', PRO[0], PRO[1]); arg('против', CON[0], CON[1]); hypothesis();
+    });
+  }
+
+  /* ---------- Вопрос: обычными словами → поиск по записям → ответ со ссылками ---------- */
+  var QUESTIONS = [
+    { q: 'Кто нам должен?', path: ['i2', 'd1', 'c1', 'i3', 'd2', 'c2'],
+      a: 'Кафе «Север» — 84 000 ₽ по счёту № 17, выставлен 3 октября. Отель «Берег» — аванс 150 000 ₽ по счёту № 21, срок 13 октября.' },
+    { q: 'Чего не хватает по кафе?', path: ['c1', 'd1', 'a1', 'i2'],
+      a: 'Акта: монтаж закончен 3 октября, а документа нет. И оплаты по счёту № 17.' },
+    { q: 'Олег свободен с 14-го?', path: ['p2', 'd2', 'k2', 'c2'],
+      a: 'Нет: с 14 октября он на монтаже в отеле «Берег» — так записано в сделке «Мебель в номера».' }
+  ];
+  function initAsk(box) {
+    var S = scene(box, 'Вы спрашиваете', 'Ответ'), G = S.G;
+    S.inbox.classList.add('lm__qs');
+    var ans = el('p', 'lm__ans'), refs = el('div', 'lm__refs'); S.out.appendChild(ans); S.out.appendChild(refs);
+    var btns = [], loop = null;
+    function clear() { ans.textContent = ''; ans.classList.remove('is-in'); refs.textContent = ''; G.light(null); }
+    function answer(Q) {
+      ans.textContent = Q.a; ans.classList.add('is-in');
+      refs.appendChild(el('span', 'lm__refs-t', 'по записям:'));
+      Q.path.forEach(function (id) { refs.appendChild(el('span', 'lm__ref', G.by[id].n.t)); });
+    }
+    /* вопрос → точка от него по записям пути → к ответу; потом следующий вопрос, по кругу */
+    function ask(i) {
+      var Q = QUESTIONS[i];
+      btns.forEach(function (b, j) { b.classList.toggle('is-on', j === i); });
+      clear(); 
+      S.later(function () {
+        
+        S.walk(Q.path, S.at(btns[i], 'end'), null, function (from) {
+          S.fly(from, S.at(ans, 'card'), 650, function () {
+            S.hide(); answer(Q);
+            S.later(function () { if (i + 1 < QUESTIONS.length) ask(i + 1); else loop(); }, 6500);
+          });
+        });
+      }, 400);
+    }
+    QUESTIONS.forEach(function (Q, i) {
+      var b = el('button', 'lm__q', Q.q); b.type = 'button'; S.inbox.appendChild(b); btns.push(b);
+      b.addEventListener('click', function () {
+        if (still) { btns.forEach(function (x, j) { x.classList.toggle('is-on', j === i); }); clear(); G.light(Q.path); answer(Q); return; }
+        S.run++; S.timers.forEach(clearTimeout); S.timers = []; S.hide(); G.showAll(); ask(i);
+      });
+    });
+    S.loop(function () { clear(); btns.forEach(function (b) { b.classList.remove('is-on'); }); }, function (again) {
+      loop = again; ask(0);
+    }, function () { btns[0].classList.add('is-on'); G.light(QUESTIONS[0].path); answer(QUESTIONS[0]); });
+  }
+
+  var INIT = { map: initMap, flow: initFlow, deal: initDeal, doc: initDoc, idea: initIdea, ask: initAsk };
   Array.prototype.forEach.call(boxes, function (b) { var f = INIT[b.getAttribute('data-lm')]; if (f) f(b); });
 })();
