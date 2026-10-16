@@ -1,4 +1,4 @@
-// Живые схемы «как это работает»: выдуманная мастерская, в которой идут пять процессов — по вкладке на каждый
+// Живые схемы «как это работает»: производство мебели, в котором идут пять процессов — по вкладке на каждый
 // (<div class="lm lm--flow" data-lm="flow|deal|doc|idea|ask"> в src/home.md, gen.py кладёт схему над шагами вкладки).
 // Граф и первая схема взяты с antonlozhkin.ru (site/theme/templates/partials/line-live.html); с 13.10 и 16.10 всё ниже
 // карты (scene и пять схем) здесь своё — при новом переносе с того сайта эту часть не затирать. map не стоит нигде.
@@ -9,7 +9,7 @@
   var NS = 'http://www.w3.org/2000/svg';
   var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---------- выдуманная мастерская: две сделки ---------- */
+  /* ---------- производство мебели: две сделки ---------- */
   var W = 720, H = 380, TOP = 30;   /* поле 720×380; над верхней точкой и под нижней подписью пусто — рамка графа их срезает */
   var NODES = [
     { id: 'c1', k: 'person', x: 90,  y: 62,  t: 'Кафе «Север»',     d: 'Кафе «Север» — заказчик. Одна сделка, два счёта, второй не оплачен.' },
@@ -41,7 +41,7 @@
      они появляются только в своей схеме (reveal) и гаснут вместе с её кругом (conceal). */
   function graph(host, extra) {
     var nodes = NODES.concat(extra ? extra.nodes : []), links = EDGES.concat(extra ? extra.edges : []);
-    var s = svg('svg', { 'class': 'lm__svg', viewBox: '0 ' + TOP + ' ' + W + ' ' + (H - TOP - 28), role: 'img', 'aria-label': 'Карта выдуманной мастерской: две сделки, заказчики, счета и документы' });
+    var s = svg('svg', { 'class': 'lm__svg', viewBox: '0 ' + TOP + ' ' + W + ' ' + (H - TOP - 28), role: 'img', 'aria-label': 'Карта производства мебели: две сделки, заказчики, счета и документы' });
     var gE = svg('g', {}), gN = svg('g', {});
     s.appendChild(gE); s.appendChild(gN); host.appendChild(s);
     var by = {}, edges = [];
@@ -133,10 +133,10 @@
     var fig = el('div', 'lm__fig'), side = el('div', 'lm__side');
     box.appendChild(fig); box.appendChild(side);
     var G = graph(fig); legend(fig);
-    side.appendChild(el('div', 'lm__kicker', 'Пример · выдуманная мастерская'));
+    side.appendChild(el('div', 'lm__kicker', 'Пример · производство мебели'));
     var cap = el('p', 'lm__cap'); side.appendChild(cap);
     var btn = el('button', 'lm__btn'); btn.type = 'button'; side.appendChild(btn);
-    var HINT = 'Две сделки одной мастерской: заказчики, счета, документы и кто чем занят. Нажмите на любую точку.';
+    var HINT = 'Две сделки производства мебели: заказчики, счета, документы и кто чем занят. Нажмите на любую точку.';
     var HEAP = 'Так это лежит в голове и в чатах: всё есть, но связей не видно.';
     var laid = true;
     function heap() { var o = {}; NODES.forEach(function (n, i) { var a = i * 2.4, r = 26 + (i * 37 % 70); o[n.id] = [W / 2 + Math.cos(a) * r * 1.5, H / 2 + Math.sin(a) * r * 0.8]; }); return o; }
@@ -160,9 +160,9 @@
 
 
   /* ---------- вкладки «Как это работает»: пять схем в одной раскладке ----------
-     Слева — что пришло или что вы сделали, в середине — карта мастерской, справа — что из этого получилось.
+     Слева — что пришло или что вы сделали, в середине — карта производства, справа — что из этого получилось.
      Одна точка ведёт взгляд. Шаги под схемой стоят неподвижно (Антон, 16.10). Карта вырастает один раз
-     на страницу, в первой показанной схеме; остальные открываются с готовой картой — мастерская та же. */
+     на страницу, в первой показанной схеме; остальные открываются с готовой картой — производство то же. */
   var grown = false;
   function scene(box, inKick, outKick, extra) {
     var inc = el('div', 'lm__col'), fig = el('div', 'lm__fig'), out = el('div', 'lm__col');

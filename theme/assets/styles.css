@@ -428,7 +428,7 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 .lm { --paper: var(--bg); --paper-2: var(--line); --line-strong: var(--line-2); --ink-1: var(--ink-2); --muted: var(--ink-3); --muted-2: var(--ink-3);
   --muted-3: var(--ink-3); --link: var(--accent); --dot-off: var(--line-2); --ease: cubic-bezier(0.22, 0.61, 0.36, 1); }
 .band--alt .lm { --paper: var(--surface); }
-/* живые схемы разделов (partials/line-live.html): граф выдуманной мастерской и то, что рядом с ним */
+/* живые схемы разделов (partials/line-live.html): граф производства мебели и то, что рядом с ним */
 /* без подложки и рамки (Антон, 12.10): схема лежит прямо на странице, поэтому обводки точек и подписей — цветом страницы */
 .lm { margin-top: 36px; color: var(--ink-2);
   display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 32px; align-items: start; }
