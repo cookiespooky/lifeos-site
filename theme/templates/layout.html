@@ -38,5 +38,38 @@
   {{- if eq .Page.Type "home" }}
   <script src="{{ .AssetsBase }}/live.js"></script>
   {{- end }}
+  {{- if .Settings.metrika_id }}
+  <script>
+    // Тот же сниппет, что в site/theme/templates/layout.html: очередь сразу, tag.js — после загрузки страницы.
+    // trackLinks пишет переходы в Telegram как внешние ссылки — цель «Переход по ссылке» на t.me настраивается
+    // в самой Метрике, кода для неё не нужно. UTM из постов Метрика разбирает сама.
+    window.ym = window.ym || function () { (window.ym.a = window.ym.a || []).push(arguments); };
+    window.ym.l = 1 * new Date();
+    ym(Number({{ .Settings.metrika_id }}), "init", {
+      clickmap: true,
+      trackLinks: true,
+      accurateTrackBounce: true,
+      webvisor: false
+    });
+    (function () {
+      var src = "https://mc.yandex.ru/metrika/tag.js?id=" + {{ .Settings.metrika_id }};
+      function load() {
+        for (var j = 0; j < document.scripts.length; j++) {
+          if (document.scripts[j].src === src) return;
+        }
+        var k = document.createElement("script");
+        k.async = 1; k.src = src;
+        document.head.appendChild(k);
+      }
+      function schedule() {
+        if (window.requestIdleCallback) requestIdleCallback(load, { timeout: 3000 });
+        else window.setTimeout(load, 1200);
+      }
+      if (document.readyState === "complete") schedule();
+      else window.addEventListener("load", schedule);
+    })();
+  </script>
+  <noscript><div><img src="https://mc.yandex.ru/watch/{{ .Settings.metrika_id }}" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+  {{- end }}
 </body>
 </html>
