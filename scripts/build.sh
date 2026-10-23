@@ -18,7 +18,7 @@ fi
 echo "2/3 Страницы"
 python3 scripts/gen.py
 
-NOTEPUB_REF="${NOTEPUB_REF:-864920de7068737d5e95bc15b0e45dc1c3436da3}"   # тот же, что у site/
+NOTEPUB_REF="${NOTEPUB_REF:-8ef36a58c94dca5bd7f3f696c05a9201cd140d47}"   # v0.1.10, тот же, что у site/ (с 23.10; v0.1.9 — связь языков, alternates)
 NOTEPUB_BIN="${NOTEPUB_BIN:-}"
 if [[ -z "$NOTEPUB_BIN" ]]; then
   if [[ -x "$ROOT_DIR/.bin/notepub" ]]; then NOTEPUB_BIN="$ROOT_DIR/.bin/notepub"
