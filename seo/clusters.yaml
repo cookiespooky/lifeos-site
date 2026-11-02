@@ -1,0 +1,68 @@
+# Реестр кластеров. Ведёт `lifeos articles`; правило — один кластер = один адрес.
+managed_by: lifeos articles
+clusters:
+- id: kontekst-inzhiniring
+  direction: demo
+  intent: informational
+  stage: written
+  page_type: article
+  money_distance: 3
+  cta_service: chto-vnutri
+  target_url: /blog/kontekst-inzhiniring/
+  total_count: null
+  keys:
+  - phrase: контекст инжиниринг
+    count_wide: null
+  - phrase: как экономить токены
+    count_wide: null
+  - phrase: кеширование промпта
+    count_wide: null
+  note: ''
+  facts:
+  - Сессия панели дашборда с 14.10 идёт из своей пустой папки; правила хранилища и оглавление памяти идут системным промптом, поэтому он кешируется отдельно от вопроса, и новая сессия не пишет ~30 тыс. токенов заново
+  - 'В системный промпт идёт только неизменное: сводка «что сейчас» — в первом сообщении сессии; замер 14.10: вторая сессия подряд пишет в кеш 13,9 тыс. токенов вместо 20,3 тыс.'
+  - Срок кеша — час или пять минут; панель показывает, сколько ещё он тёплый
+  facts_files:
+  - ../life/projects/life-os/walk-experiment-3/results.md#Цена
+  - ../life/projects/life-os/walk-experiment-3/results.md#Что видно
+  slug: kontekst-inzhiniring
+- id: sessiya-ili-novyy-chat
+  direction: demo
+  intent: informational
+  stage: planned
+  page_type: article
+  money_distance: 3
+  cta_service: chto-vnutri
+  target_url: /blog/sessiya-ili-novyy-chat/
+  total_count: null
+  keys:
+  - phrase: новый чат или продолжать
+    count_wide: null
+  - phrase: когда начинать новый чат с нейросетью
+    count_wide: null
+  note: ''
+  facts_files:
+  - ../life/projects/life-os/walk-experiment-2/results.md#Цена
+  - ../life/projects/life-os/walk-experiment-2/results.md#Что видно
+  - '../life/projects/life-os/walk-experiment-2/results.md#Поправка: цена сессии'
+  - ../life/projects/life-os/walk-experiment-3/results.md#Качество
+  - ../life/projects/life-os/walk-experiment-3/results.md#Гипотезы
+  slug: sessiya-ili-novyy-chat
+- id: odin-pisatel
+  direction: chto-vnutri
+  intent: informational
+  stage: planned
+  page_type: article
+  money_distance: 3
+  cta_service: chto-vnutri
+  target_url: /blog/odin-pisatel-u-fayla/
+  total_count: null
+  keys:
+  - phrase: конфликты синхронизации obsidian
+    count_wide: null
+  - phrase: синхронизация obsidian без облака
+    count_wide: null
+  note: ''
+  facts_files:
+  - ../projects/lifeos/AGENTS.md#Что нельзя сломать
+  slug: odin-pisatel-u-fayla

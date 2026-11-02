@@ -3,6 +3,7 @@
 
     python3 scripts/gen.py            # переписать content/ целиком
     python3 scripts/gen.py --check    # только проверить src/ и данные, ничего не писать
+    python3 scripts/gen.py --lang en  # английская версия: src/en/ и перевод реестра src/en/components.json -> content-en/
 
 Одни и те же входы — одни и те же файлы: дат сборки нет, порядок задан данными, координаты графа считаются из
 порядка частей. content/ руками не правится и в git не лежит.
@@ -19,30 +20,115 @@ theme/assets/styles.css, ни одного стиля в строке. Вид м
 («- Заголовок: текст | значок | адрес»). src/flow.md (type: flow) — не страница, а схема первого
 экрана в три раздела; пока его нет, первый экран занимает граф частей из реестра. Формат главной — в README.md. Только stdlib.
 """
-import html, json, math, os, re, shutil, sys
+import hashlib, html, json, math, os, re, shutil, sys
+from urllib.parse import urlparse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC, OUT, DATA = (os.path.join(ROOT, d) for d in ('src', 'content', os.path.join('data', 'components.json')))
+# Язык сборки: `--lang en` собирает английскую версию — тексты из src/en/, перевод реестра из src/en/components.json,
+# страницы в content-en/. Русская версия — без флага, как раньше.
+LANG = sys.argv[sys.argv.index('--lang') + 1] if '--lang' in sys.argv else 'ru'
+if LANG not in ('ru', 'en'):
+    sys.exit(f'--lang {LANG}: есть только ru и en')
+EN = LANG == 'en'
+SRC = os.path.join(ROOT, 'src', 'en') if EN else os.path.join(ROOT, 'src')
+OUT = os.path.join(ROOT, 'content-en' if EN else 'content')
+DATA = os.path.join(ROOT, 'data', 'components.json')
+TRANSLATION = os.path.join(ROOT, 'src', 'en', 'components.json')
 STOP = ['модел', 'нейросет', 'frontmatter', 'деплой', 'скилл', 'заметк']   # те же части слов, что в реестре (component_stop)
+# В английской версии — то же правило и вдобавок российские сервисы и рубли: их там быть не должно.
+STOP_EN = ['model', 'neural', 'frontmatter', 'deploy', 'skill', ' note', 'yandex', 'sber', 'vkontakte', 'wordstat',
+           'yougile', 'bitrix', 'amocrm', '₽', 'rub']
 MONTHS = 'января февраля марта апреля мая июня июля августа сентября октября ноября декабря'.split()
+MONTHS_EN = 'January February March April May June July August September October November December'.split()
+# Адреса разделов: у английской версии свои, латиницей по смыслу.
+P = ({'inside': 'inside', 'for': 'for', 'how': 'how', 'news': 'news'} if EN else
+     {'inside': 'chto-vnutri', 'for': 'dlya', 'how': 'kak', 'news': 'chto-novogo'})
+# Слова, которые gen.py пишет сам. Состояние части в реестре всегда по-русски; на странице — его подпись.
+T = {
+    'ru': {'planned': 'в планах', 'soon': 'скоро', 'more': 'Подробнее', 'situation': 'Ситуация', 'for_what': 'Для чего',
+           'on_scheme': 'Что на схеме', 'group': 'группа', 'part': 'часть', 'in_dev': 'в разработке', 'Group': 'Группа',
+           'whole_group': 'Вся группа', 'how': 'Как работает', 'human': 'Что делает человек', 'open_page': 'Открыть страницу',
+           'graph_lead': 'Нажмите на точку — здесь появится, что это; кнопками выше можно выбрать, для чего система нужна.',
+           'graph_aria': 'Схема: {} системы вокруг общего центра', 'of': 'из', 'pick': 'Выберите точку',
+           'flow_hint': 'Наведите на любую точку или нажмите на неё — здесь появится, что это.', 'close': 'Закрыть',
+           'k_use': 'Для кого', 'k_howto': 'Инструкции', 'inside': 'Что внутри',
+           'inside_desc': 'Части системы по группам: что каждая делает и в каком она состоянии.',
+           'pending': 'Описание готовится.', 'where': 'Где это нужно', 'history': 'История', 'for': 'Для кого',
+           'for_desc': 'Четыре способа пользоваться системой — по тому, какая работа для вас главная.',
+           'news': 'Что нового', 'news_desc': 'Что менялось в системе, по датам. Страница собирается из истории частей.',
+           'blog': 'Блог', 'blog_desc': 'Как устроена Life OS и почему так, а не иначе: решения, их доводы и замеры.',
+           'draft': 'черновик',
+           'status': {'работает': 'работает', 'в разработке': 'в разработке', 'задумано': 'задумано'}},
+    'en': {'planned': 'planned', 'soon': 'soon', 'more': 'Learn more', 'situation': 'Example', 'for_what': 'What for',
+           'on_scheme': 'On the map', 'group': 'group', 'part': 'part', 'in_dev': 'in progress', 'Group': 'Group',
+           'whole_group': 'The whole group', 'how': 'How it works', 'human': 'What a person does', 'open_page': 'Open the page',
+           'graph_lead': 'Tap a point to see what it is; the buttons above show what the system is for.',
+           'graph_aria': 'Map: {} of the system around one centre', 'of': 'of', 'pick': 'Pick a point',
+           'flow_hint': 'Hover over any point or tap it to see what it is.', 'close': 'Close',
+           'k_use': 'Who it is for', 'k_howto': 'Guides', 'inside': 'What is inside',
+           'inside_desc': 'The parts of the system by group: what each one does and how ready it is.',
+           'pending': 'Description in progress.', 'where': 'Where it helps', 'history': 'History', 'for': 'Who it is for',
+           'for_desc': 'Four ways to use the system, depending on which work matters most to you.',
+           'news': 'What is new', 'news_desc': 'What changed in the system, by date.',
+           'blog': 'Blog', 'blog_desc': 'How Life OS is built and why.', 'draft': 'draft',
+           'status': {'работает': 'works', 'в разработке': 'in progress', 'задумано': 'planned'}},
+}[LANG]
 errors = []
 esc = lambda s: html.escape(str(s), quote=True)
 
 
 def typo(s):
     """Короткое слово не остаётся в конце строки: после него — неразрывный пробел."""
+    if EN:
+        return re.sub(r'(?<![\w-])(a|an|I|A|An|to|of|in|on|at|by|or) ', '\\1\u00a0', s.replace(' — ', '\u00a0— '))
     s = s.replace(' — ', '\u00a0— ')   # тире не начинает строку
     return re.sub(r'(?<![\w-])([ВвИиСсКкОоУуАа]|на|не|по|за|из|от|до|об|но|На|Не|По|За|Из|От|До|Об|Но) ', '\\1\u00a0', s)
 
 
 def date_ru(d):
     y, m, day = d.split('-')
-    return f'{int(day)} {MONTHS[int(m) - 1]} {y}'
+    return f'{int(day)} {(MONTHS_EN if EN else MONTHS)[int(m) - 1]} {y}'
 
 
 def plural(n, one, few, many):
+    if EN:
+        return f'{n} {one if n == 1 else many}'
     n10, n100 = n % 10, n % 100
     return f'{n} ' + (one if n10 == 1 and n100 != 11 else few if 2 <= n10 <= 4 and not 12 <= n100 <= 14 else many)
+
+
+def ru_hash(c):
+    """Отпечаток русского текста части: перевод помнит, с какого текста он сделан, и устаревает вместе с ним."""
+    return hashlib.sha1(json.dumps([c['title'], c['summary'], c['how'], c['human']], ensure_ascii=False).encode()).hexdigest()[:10]
+
+
+def translate(data):
+    """Английская версия реестра: тексты частей, групп и вариантов — из src/en/components.json. Части из `drop` на
+    английский сайт не идут (держатся на российских сервисах). Части без перевода или с переводом устаревшего
+    русского текста — ошибка: сайт не собирается, пока перевод не догонит реестр."""
+    tr = json.load(open(TRANSLATION, encoding='utf-8'))
+    groups, uses, parts, drop = tr['groups'], tr['uses'], tr['components'], set(tr.get('drop', []))
+    out = []
+    for c in data['components']:
+        if c['id'] in drop:
+            continue
+        t = parts.get(c['id'])
+        if not t:
+            errors.append(f'src/en/components.json: нет перевода части «{c["id"]}» ({c["title"]}) — перевести или внести в drop')
+            continue
+        if t.get('ru_hash') != ru_hash(c):
+            errors.append(f'src/en/components.json: русский текст части «{c["id"]}» изменился после перевода — '
+                          f'перевести заново и поставить ru_hash: "{ru_hash(c)}"')
+        for k in ('group',):
+            if c[k] not in groups:
+                errors.append(f'src/en/components.json: нет перевода группы «{c[k]}»')
+        out.append(dict(c, title=t['title'], summary=t['summary'], how=t['how'], human=t['human'],
+                        group=groups.get(c['group'], c['group']), **{'for': [uses[u] for u in c['for'] if u in uses]}))
+    for k in set(parts) - {c['id'] for c in data['components']}:
+        errors.append(f'src/en/components.json: части «{k}» в реестре больше нет — убрать перевод')
+    kept = {c['group'] for c in out}
+    return {'components': out, 'groups': [groups[g] for g in data['groups'] if groups.get(g) in kept],
+            'uses': [uses[u] for u in data['uses'] if u in uses], 'statuses': data['statuses'], 'changes': []}
 
 
 def split(text, name):
@@ -69,11 +155,11 @@ def page(kind, slug, title, description, body, order=None, kicker=None, badge=No
 # ---------- блоки ----------
 
 def badge(c):
-    return '' if c['status'] == 'работает' else f'<span class="badge">{esc(c["status"])}</span>'
+    return '' if c['status'] == 'работает' else f'<span class="badge">{esc(T["status"][c["status"]])}</span>'
 
 
 def part_url(c):
-    return f'/chto-vnutri/{c["id"]}/'
+    return f'/{P["inside"]}/{c["id"]}/'
 
 
 def rows_parts(parts):
@@ -95,14 +181,14 @@ def rows_dated(items):
 def tiles(uses):
     out = ['<div class="tiles">']
     for _, fm, _, _ in uses:
-        out.append(f'<a class="tile" href="/dlya/{fm["slug"]}/"><span class="tile__label"><span>{esc(fm["use"])}</span><span aria-hidden="true">→</span></span>'
+        out.append(f'<a class="tile" href="/{P["for"]}/{fm["slug"]}/"><span class="tile__label"><span>{esc(fm["use"])}</span><span aria-hidden="true">→</span></span>'
                    f'<span class="tile__title">{esc(typo(fm["title"]))}</span><span class="tile__text">{esc(fm["description"])}</span></a>')
     return '\n'.join(out + ['</div>'])
 
 
 def app(title, file, soon):
     img = f'<img src="/assets/logos/{esc(file)}" alt="" width="32" height="32" loading="lazy">' if file else ''
-    return f'<li class="app{" app--soon" if soon else ""}"' + (' title="в планах"' if soon else '') + f'>{img}<span>{esc(title)}</span></li>'
+    return f'<li class="app{" app--soon" if soon else ""}"' + (f' title="{T["planned"]}"' if soon else '') + f'>{img}<span>{esc(title)}</span></li>'
 
 
 def apps_by_group(lines, name):
@@ -114,8 +200,8 @@ def apps_by_group(lines, name):
             out.append((l[2:].strip(), []))
         elif re.match(r'\s+- ', l) and out:
             item, soon = l.strip()[2:], False
-            if item.endswith(', в планах'):
-                item, soon = item[:-len(', в планах')], True
+            if item.endswith(', ' + T['planned']):
+                item, soon = item[:-len(', ' + T['planned'])], True
             title, _, file = item.rpartition(': ') if ': ' in item else (item, '', '')
             if file and not os.path.exists(os.path.join(ROOT, 'theme', 'assets', 'logos', file.strip())):
                 errors.append(f'{name}: нет значка theme/assets/logos/{file.strip()} для «{title}»')
@@ -193,10 +279,10 @@ def use_tabs(uses, examples):
     items = []
     for _, fm, _, name in uses:
         text = (f'<div class="usecase__text"><h3 class="usecase__title">{esc(typo(fm["title"]))}</h3><p>{esc(fm["description"])}</p>'
-                f'<a class="more" href="/dlya/{fm["slug"]}/">Подробнее <span aria-hidden="true">→</span></a></div>')
+                f'<a class="more" href="/{P["for"]}/{fm["slug"]}/">{T["more"]} <span aria-hidden="true">→</span></a></div>')
         if name not in examples:
             errors.append(f'{name}: нет примера — {{{{example}}}} и список под ним')
-        items.append((fm['use'], f'<div class="usecase">{text}<div class="frame"><div class="frame__label">Ситуация</div>{examples.get(name, "")}</div></div>'))
+        items.append((fm['use'], f'<div class="usecase">{text}<div class="frame"><div class="frame__label">{T["situation"]}</div>{examples.get(name, "")}</div></div>'))
     return tabs('use', items)
 
 
@@ -243,14 +329,14 @@ def graph(data, by_group, uses):
         else:
             lx, ly, anchor = gx, gy + (44 if sin > 0 else -24), "middle"
         names = ', '.join(c['title'] for c in parts)
-        nodes.append(f'<a class="graph__group" href="/chto-vnutri/#g{gi}" data-group="g{gi}" data-node="g{gi}" data-x="{gx}" data-y="{gy}" data-title="{esc(g)}" data-caption="{esc(plural(len(parts), "часть", "части", "частей"))}: {esc(names)}.">'
+        nodes.append(f'<a class="graph__group" href="/{P["inside"]}/#g{gi}" data-group="g{gi}" data-node="g{gi}" data-x="{gx}" data-y="{gy}" data-title="{esc(g)}" data-caption="{esc(plural(len(parts), "part", "", "parts") if EN else plural(len(parts), "часть", "части", "частей"))}: {esc(names)}.">'
                      f'<circle class="graph__halo" cx="{gx}" cy="{gy}" r="20"/><circle cx="{gx}" cy="{gy}" r="10"/>'
                      f'<text x="{round(lx, 1)}" y="{round(ly, 1)}" text-anchor="{anchor}">{esc(g)}</text><circle class="graph__hit" cx="{gx}" cy="{gy}" r="30"/></a>')
         for c, pa in zip(parts, angles):
             px, py = pt(R2, pa)
             edges.append(f'<line class="graph__edge" data-group="g{gi}" data-part="{c["id"]}" x1="{gx}" y1="{gy}" x2="{px}" y2="{py}"/>')
             soon = '' if c['status'] == 'работает' else ' graph__part--soon'
-            state = '' if c['status'] == 'работает' else f' ({c["status"]})'
+            state = '' if c['status'] == 'работает' else f' ({T["status"][c["status"]]})'
             nodes.append(f'<a class="graph__part{soon}" href="{part_url(c)}" data-part="{c["id"]}" data-node="{c["id"]}" data-x="{px}" data-y="{py}" data-group="g{gi}" data-uses="{esc(" ".join(c["for"]))}" '
                          f'data-title="{esc(c["title"] + state)}" data-caption="{esc(c["summary"])}"><title>{esc(c["title"] + state)}</title>'
                          f'<circle cx="{px}" cy="{py}" r="8"/><circle class="graph__hit" cx="{px}" cy="{py}" r="22"/></a>')
@@ -259,33 +345,33 @@ def graph(data, by_group, uses):
         pulses.append(f'<circle class="graph__pulse" r="3.5" opacity="0"><animateMotion dur="{dur}s" begin="{round(gi * 0.8, 1)}s" repeatCount="indefinite" path="M{px} {py} L{gx} {gy} L{CX} {CY}"/>'
                       f'<animate attributeName="opacity" dur="{dur}s" begin="{round(gi * 0.8, 1)}s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.15;0.8;1"/></circle>')
     n_parts, n_groups = len(data['components']), len(groups)
-    count = f'{plural(n_groups, "группа", "группы", "групп")}, {plural(n_parts, "часть", "части", "частей")}'
-    lead = f'{count[0].upper() + count[1:]}. Нажмите на точку — здесь появится, что это; кнопками выше можно выбрать, для чего система нужна.'
+    count = f'{plural(n_groups, T["group"], "группы", T["group"] + "s" if EN else "групп")}, {plural(n_parts, T["part"], "части", T["part"] + "s" if EN else "частей")}'
+    lead = f'{count[0].upper() + count[1:]}. {T["graph_lead"]}'
     soon = any(c['status'] != 'работает' for c in data['components'])
     chips = ''.join(f'<button class="chip" type="button" data-use="{esc(fm["use"])}" data-caption="{esc(fm["title"])}">{esc(fm["use"])}</button>' for _, fm, _, _ in uses)
     # Подробное описание каждой точки лежит под графом и открывается по ссылке «Подробнее» из пузыря (правило :target).
     info = []
     for gi, g in enumerate(groups, 1):
         rows = ''.join(f'<li><a href="{part_url(c)}">{esc(c["title"])}</a>{badge(c)}<span>{esc(c["summary"])}</span></li>' for c in by_group[g])
-        info.append(f'<article class="graph__info" id="node-g{gi}"><p class="graph__label">Группа</p><h3>{esc(g)}</h3><ul class="graph__parts">{rows}</ul>'
-                    f'<a class="more" href="/chto-vnutri/#g{gi}">Вся группа <span aria-hidden="true">→</span></a></article>')
+        info.append(f'<article class="graph__info" id="node-g{gi}"><p class="graph__label">{T["Group"]}</p><h3>{esc(g)}</h3><ul class="graph__parts">{rows}</ul>'
+                    f'<a class="more" href="/{P["inside"]}/#g{gi}">{T["whole_group"]} <span aria-hidden="true">→</span></a></article>')
         for c in by_group[g]:
-            how = f'<div><p class="graph__label">Как работает</p><p>{esc(c["how"])}</p></div>' if c['how'] else ''
-            human = f'<div><p class="graph__label">Что делает человек</p><p>{esc(c["human"])}</p></div>' if c['human'] else ''
+            how = f'<div><p class="graph__label">{T["how"]}</p><p>{esc(c["how"])}</p></div>' if c['how'] else ''
+            human = f'<div><p class="graph__label">{T["human"]}</p><p>{esc(c["human"])}</p></div>' if c['human'] else ''
             info.append(f'<article class="graph__info" id="node-{c["id"]}"><p class="graph__label">{esc(g)}{badge(c)}</p><h3>{esc(c["title"])}</h3><p class="graph__sum">{esc(c["summary"])}</p>'
-                        f'<div class="graph__more">{how}{human}</div><a class="more" href="{part_url(c)}">Открыть страницу <span aria-hidden="true">→</span></a></article>')
+                        f'<div class="graph__more">{how}{human}</div><a class="more" href="{part_url(c)}">{T["open_page"]} <span aria-hidden="true">→</span></a></article>')
     return '\n'.join([
         '<div class="graph" data-graph>',
         '<div class="graph__stage">',
-        f'<div class="graph__canvas"><svg viewBox="{CX - R2 - PAD} {CY - R2 - PAD} {2 * (R2 + PAD)} {2 * (R2 + PAD)}" role="img" aria-label="Схема: {esc(count)} системы вокруг общего центра">',
+        f'<div class="graph__canvas"><svg viewBox="{CX - R2 - PAD} {CY - R2 - PAD} {2 * (R2 + PAD)} {2 * (R2 + PAD)}" role="img" aria-label="{esc(T["graph_aria"].format(count))}">',
         *edges,
         f'<circle class="graph__ring" cx="{CX}" cy="{CY}" r="66"/><circle class="graph__core" cx="{CX}" cy="{CY}" r="50"/><text class="graph__core-label" x="{CX}" y="{CY + 8}">Life OS</text>',
         *pulses, *nodes, '</svg></div>',
-        f'<div class="graph__filters js-only"><span class="graph__label">Для чего</span><div class="chips">{chips}</div></div>',
-        '<div class="graph__side" aria-live="polite"><span class="graph__label" data-graph-kind data-default="Что на схеме">Что на схеме</span>',
+        f'<div class="graph__filters js-only"><span class="graph__label">{T["for_what"]}</span><div class="chips">{chips}</div></div>',
+        f'<div class="graph__side" aria-live="polite"><span class="graph__label" data-graph-kind data-default="{T["on_scheme"]}">{T["on_scheme"]}</span>',
         f'<p class="graph__caption" data-graph-caption data-default="{esc(lead)}">{esc(lead)}</p>',
         '<ul class="graph__result" data-graph-result></ul>',
-        '<div class="graph__legend"><span><i class="is-group"></i>группа</span><span><i></i>часть</span>' + ('<span><i class="is-soon"></i>в разработке</span>' if soon else '') + '</div></div>',
+        f'<div class="graph__legend"><span><i class="is-group"></i>{T["group"]}</span><span><i></i>{T["part"]}</span>' + (f'<span><i class="is-soon"></i>{T["in_dev"]}</span>' if soon else '') + '</div></div>',
         '</div>',
         '<div class="graph__details">', *info, '</div>',
         '</div>'])
@@ -377,17 +463,17 @@ def flow(sections):
         out += [f'<g class="flow__node flow__part" {data(t, sec, cap)}><circle cx="{x}" cy="{y}" r="9"/><text x="{x}" y="{y + 30}">{esc(t)}</text></g>' for (x, y), (t, cap, _) in zip(spots, nodes)]
         return H, out
 
-    hint = 'Наведите на любую точку или нажмите на неё — здесь появится, что это.'
+    hint = T['flow_hint']
     rows = []
     for n, (sec, text, nodes) in enumerate(sections, 1):
         H, body = core(sec, nodes) if n == 2 else fan(sec, nodes, n == 3)
         rows += [f'<section class="flow__row flow__row--{n}">',
-                 f'<div class="flow__text"><p class="graph__label">{n:02d} из {len(sections):02d}</p><h2 class="flow__title">{esc(typo(sec))}</h2><p>{esc(text)}</p>' + '</div>',
+                 f'<div class="flow__text"><p class="graph__label">{n:02d} {T["of"]} {len(sections):02d}</p><h2 class="flow__title">{esc(typo(sec))}</h2><p>{esc(text)}</p>' + '</div>',
                  f'<div class="flow__canvas"><svg viewBox="0 0 {W} {H}" role="img" aria-label="{esc(sec)}: {esc(", ".join(t for t, _, _ in nodes))}">', *body, '</svg></div>',
-                 f'<div class="flow__side js-only" aria-live="polite" data-kind="Что на схеме" data-title="Выберите точку" data-caption="{esc(hint)}">'
-                 f'<span class="graph__label" data-flow-kind>Что на схеме</span><p class="flow__caption" data-flow-caption><strong>Выберите точку</strong>{esc(hint)}</p></div>',
+                 f'<div class="flow__side js-only" aria-live="polite" data-kind="{T["on_scheme"]}" data-title="{T["pick"]}" data-caption="{esc(hint)}">'
+                 f'<span class="graph__label" data-flow-kind>{T["on_scheme"]}</span><p class="flow__caption" data-flow-caption><strong>{T["pick"]}</strong>{esc(hint)}</p></div>',
                  '</section>']
-    sheet = ('<div class="sheet" data-flow-sheet aria-live="polite"><button class="sheet__close" type="button" aria-label="Закрыть">×</button>'
+    sheet = (f'<div class="sheet" data-flow-sheet aria-live="polite"><button class="sheet__close" type="button" aria-label="{T["close"]}">×</button>'
              '<span class="graph__label" data-sheet-kind></span><strong data-sheet-title></strong><p data-sheet-text></p></div>')
     return '\n'.join(['<div class="flow" data-flow>', *rows, sheet, '</div>'])
 
@@ -415,7 +501,7 @@ def ways(lines, name):
             continue
         if not os.path.exists(os.path.join(ROOT, 'theme', 'assets', 'logos', parts[1])):
             errors.append(f'{name}: нет значка theme/assets/logos/{parts[1]} для «{head}»')
-        soon = parts[2] == 'скоро'                    # ссылки ещё нет: карточка бледная и не нажимается
+        soon = parts[2] == T['soon']                    # ссылки ещё нет: карточка бледная и не нажимается
         tag, end = ('<div class="way way--soon">', '</div>') if soon else (f'<a class="way" href="{esc(parts[2])}">', '</a>')
         arrow = '' if soon else ' <span aria-hidden="true">→</span>'
         out.append(f'{tag}<span class="way__icon"><img src="/assets/logos/{esc(parts[1])}" alt="" width="28" height="28" loading="lazy"></span>'
@@ -485,8 +571,68 @@ def home(fm, body, name, marks, graph_html):
     return '\n\n'.join(out)
 
 
+def under_base(files):
+    """Английская версия живёт под путём (/en/ с 2.11, раньше — свой поддомен): ссылки от корня, которые пишут gen.py
+    и тексты, получают этот путь. Путь — из base_url в config.en.yaml; у превью он тот же."""
+    url = re.search(r'base_url: "([^"]+)"', open(os.path.join(ROOT, 'config.en.yaml'), encoding='utf-8').read()).group(1)
+    base = urlparse(url).path.rstrip('/')
+    if not base:
+        return files
+    fix = lambda t: re.sub(r'(href="|\]\()/(?!/)', lambda m: m.group(1) + base + '/', t)
+    return {name: fix(text) for name, text in files.items()}
+
+
+def twins():
+    """Пары страниц на двух языках: ключ -> {язык: полный адрес}. Обе сборки считают одно и то же — каждая версия
+    ссылается на свою пару (hreflang), а движок пишет из `alternates` ссылки rel=alternate. Страница без пары
+    (инструкции, «Что нового», части из drop) остаётся без них."""
+    base = {l: re.search(r'base_url: "([^"]+)"', open(os.path.join(ROOT, c), encoding='utf-8').read()).group(1).rstrip('/')
+            for l, c in (('ru', 'config.yaml'), ('en', 'config.en.yaml'))}
+    paths = {'ru': {'inside': 'chto-vnutri', 'for': 'dlya'}, 'en': {'inside': 'inside', 'for': 'for'}}
+    tr = json.load(open(TRANSLATION, encoding='utf-8'))
+    data = json.load(open(DATA, encoding='utf-8'))
+    out = {}
+    def add(key, lang, path):
+        out.setdefault(key, {})[lang] = base[lang] + path
+    for lang in ('ru', 'en'):
+        p = paths[lang]
+        add('home', lang, '/'); add('inside', lang, f'/{p["inside"]}/'); add('for', lang, f'/{p["for"]}/')
+        folder = os.path.join(ROOT, 'src', 'en') if lang == 'en' else os.path.join(ROOT, 'src')
+        for name in sorted(os.listdir(folder)):
+            if not name.endswith('.md'):
+                continue
+            fm, _ = split(open(os.path.join(folder, name), encoding='utf-8').read(), name)
+            if fm.get('type') == 'use':
+                use = fm['use'] if lang == 'ru' else next((r for r, e in tr['uses'].items() if e == fm['use']), fm['use'])
+                add(f'use:{use}', lang, f'/{p["for"]}/{fm["slug"]}/')
+        for c in data['components']:
+            if lang == 'ru' or (c['id'] not in tr.get('drop', []) and c['id'] in tr['components']):
+                add(f'part:{c["id"]}', lang, f'/{p["inside"]}/{c["id"]}/')
+    return {k: v for k, v in out.items() if len(v) == 2}
+
+
+def with_twins(files, uses):
+    """Вставляет `alternates` в свойства страниц, у которых есть пара на другом языке; x-default — английская."""
+    pairs, use_of = twins(), {fm['slug']: fm['use'] for _, fm, _, _ in uses}
+    if EN:
+        use_of = {slug: next((r for r, e in json.load(open(TRANSLATION, encoding='utf-8'))['uses'].items() if e == u), u)
+                  for slug, u in use_of.items()}
+    out = {}
+    for name, text in files.items():
+        kind, slug = (re.search(rf'^{k}: (.*)$', text, re.M).group(1) for k in ('type', 'slug'))
+        key = ('home' if kind == 'home' else f'use:{use_of.get(slug)}' if kind == 'use' else f'part:{slug}' if kind == 'part'
+               else 'inside' if slug == P['inside'] else 'for' if slug == P['for'] else None)
+        if key in pairs:
+            alt = ['alternates:'] + [f'  {l}: "{u}"' for l, u in sorted(pairs[key].items())] + [f'  x-default: "{pairs[key]["en"]}"']
+            text = re.sub(r'^(slug: .*)$', lambda m: m.group(1) + '\n' + '\n'.join(alt), text, count=1, flags=re.M)
+        out[name] = text
+    return out
+
+
 def main():
     data = json.load(open(DATA, encoding='utf-8'))
+    if EN:
+        data = translate(data)
     comps = data['components']
     by_group = {g: [c for c in comps if c['group'] == g] for g in data['groups']}
     files, uses, howtos, flow_sections = {}, [], [], None
@@ -497,7 +643,7 @@ def main():
     sources = {f: open(os.path.join(SRC, f), encoding='utf-8').read() for f in sorted(os.listdir(SRC)) if f.endswith('.md')}
     for name, text in sources.items():
         low = text.lower()
-        errors.extend(f'{name}: слово с «{w}» — его на сайте быть не должно' for w in STOP if w in low)
+        errors.extend(f'{name}: слово с «{w}» — его на сайте быть не должно' for w in (STOP_EN if EN else STOP) if w in low)
         fm, body = split(text, name)
         if fm.get('type') == 'flow':
             flow_sections = flow_parse(body, name)
@@ -521,9 +667,9 @@ def main():
         'groups': cols(data['groups'], by_group),
         'cols': lambda apps: cols(data['groups'], by_group, apps),
         'uses': tiles(uses),
-        'howtos': rows_dated([(None, fm['title'], f'/kak/{fm["slug"]}/', fm['description']) for _, fm, _, _ in howtos]) if howtos else '',
+        'howtos': rows_dated([(None, fm['title'], f'/{P["how"]}/{fm["slug"]}/', fm['description']) for _, fm, _, _ in howtos]) if howtos else '',
     }
-    kickers = {'use': 'Для кого', 'howto': 'Инструкции'}
+    kickers = {'use': T['k_use'], 'howto': T['k_howto']}
     for name, text in sources.items():
         fm, body = split(text, name)
         if fm.get('type') == 'home':
@@ -548,33 +694,71 @@ def main():
     inside = []
     for i, g in enumerate(data['groups'], 1):
         inside += [f'<h2 id="g{i}">{esc(g)}</h2>', '', rows_parts(by_group[g]), '']
-    files['chto-vnutri.md'] = page('page', 'chto-vnutri', 'Что внутри', 'Части системы по группам: что каждая делает и в каком она состоянии.', '\n'.join(inside))
+    files[P['inside'] + '.md'] = page('page', P['inside'], T['inside'], T['inside_desc'], '\n'.join(inside))
     use_title = {fm['use']: (fm['title'], fm['slug']) for _, fm, _, _ in uses if fm.get('use')}
     for c in comps:
-        body = ['## Как работает', '', c['how'] or 'Описание готовится.', '', '## Что делает человек', '', c['human'] or 'Описание готовится.', '']
-        where = [f'<a class="chip" href="/dlya/{use_title[u][1]}/">{esc(use_title[u][0])}</a>' for u in c['for'] if u in use_title]
+        body = [f'## {T["how"]}', '', c['how'] or T['pending'], '', f'## {T["human"]}', '', c['human'] or T['pending'], '']
+        where = [f'<a class="chip" href="/{P["for"]}/{use_title[u][1]}/">{esc(use_title[u][0])}</a>' for u in c['for'] if u in use_title]
         if where:
-            body += ['## Где это нужно', '', '<div class="chips">' + ''.join(where) + '</div>', '']
+            body += [f'## {T["where"]}', '', '<div class="chips">' + ''.join(where) + '</div>', '']
         mine = [ch for ch in data['changes'] if ch['id'] == c['id']]
         if mine:
-            body += ['## История', '', rows_dated([(ch['date'], None, None, ch['text']) for ch in mine])]
+            body += [f'## {T["history"]}', '', rows_dated([(ch['date'], None, None, ch['text']) for ch in mine])]
         files[f'part-{c["id"]}.md'] = page('part', c['id'], c['title'], c['summary'], '\n'.join(body), c['order'],
-                                           kicker=f'Что внутри · {c["group"]}', badge=c['status'])
+                                           kicker=f'{T["inside"]} · {c["group"]}', badge=T['status'][c['status']])
 
     # Для кого и Что нового
-    files['dlya.md'] = page('page', 'dlya', 'Для кого', 'Четыре способа пользоваться системой — по тому, какая работа для вас главная.', marks['uses'])
+    files[P['for'] + '.md'] = page('page', P['for'], T['for'], T['for_desc'], marks['uses'])
     news, days = [], []
     for ch in data['changes']:
         if not days or days[-1][0] != ch['date']:
             days.append((ch['date'], []))
-        days[-1][1].append((ch['date'], ch['title'], f'/chto-vnutri/{ch["id"]}/', ch['text']))
+        days[-1][1].append((ch['date'], ch['title'], f'/{P["inside"]}/{ch["id"]}/', ch['text']))
     for d, items in days:
         news += [f'## {date_ru(d)}', '', rows_dated(items), '']
-    files['chto-novogo.md'] = page('page', 'chto-novogo', 'Что нового', 'Что менялось в системе, по датам. Страница собирается из истории частей.', '\n'.join(news))
+    if news:   # в английской версии истории частей нет: её строки пишутся по-русски каждый день
+        files[P['news'] + '.md'] = page('page', P['news'], T['news'], T['news_desc'], '\n'.join(news))
+
+    # Блог (с 31.10): статьи из src/blog/, их реестр, бриф и проверку ведёт `lifeos articles` (seo/ здесь). Стоп-список
+    # сайта к ним не применяется — блог пишет об устройстве системы (решение 31.10); стоп-слова блога и имена заказчиков
+    # ловит `lifeos articles check`. Черновик (draft: true) в сборку не идёт, кроме просмотра с LIFEOS_SITE_DRAFTS=1.
+    posts, blog_dir = [], os.path.join(SRC, 'blog')
+    for name in sorted(os.listdir(blog_dir)) if os.path.isdir(blog_dir) else []:
+        if not name.endswith('.md'):
+            continue
+        fm, body = split(open(os.path.join(blog_dir, name), encoding='utf-8').read(), f'blog/{name}')
+        if fm.get('type') != 'article':
+            errors.append(f'blog/{name}: type не article')
+            continue
+        fm = {k: v.strip("'") for k, v in fm.items()}   # шапку пишет yaml генератора: строки бывают в одинарных кавычках
+        draft = fm.get('draft') == 'true'
+        if draft and not os.environ.get('LIFEOS_SITE_DRAFTS'):
+            continue
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', fm.get('date', '')):
+            errors.append(f'blog/{name}: нет даты (date: ГГГГ-ММ-ДД)')
+            continue
+        posts.append((fm, body, draft))
+    posts.sort(key=lambda p: (p[0]['date'], p[0].get('slug', '')), reverse=True)
+    for fm, body, draft in posts:
+        kicker = f'{T["blog"]} · {date_ru(fm["date"])}' + (f' · {T["draft"]}' if draft else '')
+        files[f'blog-{fm.get("slug", "")}.md'] = page('article', fm.get('slug', ''), fm.get('title', ''),
+                                                       fm.get('description', ''), body, kicker=kicker)
+    if posts:
+        files['blog.md'] = page('page', 'blog', T['blog'], T['blog_desc'], rows_dated(
+            [(None, fm['title'], f'/blog/{fm["slug"]}/', f'{date_ru(fm["date"])} · {fm.get("description", "")}')
+             for fm, _, _ in posts]))
 
     # Названия со сноской: звёздочка встаёт везде, где они названы, — и в текстах из реестра; сама сноска — в подвале
     # (legal_note в config.yaml). Имена файлов и адреса пишутся строчными и под правило не попадают.
-    files = {name: re.sub(r'\b(Threads|Instagram)\b(?!\*)', r'\1*', text) for name, text in files.items()}
+    # Сноска нужна только в России: в английской версии её нет, а в тексте не должно остаться ни одной русской буквы.
+    if EN:
+        errors.extend(f'{name}: русские буквы — «{m.group(0)}»' for name, text in files.items()
+                      for m in [re.search(r'\S*[А-Яа-яЁё]+\S*', text)] if m)
+        errors.extend(f'{name}: слово с «{w}» — его на английском сайте быть не должно' for name, text in files.items()
+                      for w in STOP_EN if w in text.lower())
+    else:
+        files = {name: re.sub(r'\b(Threads|Instagram)\b(?!\*)', r'\1*', text) for name, text in files.items()}
+    files = with_twins(files, uses)
     slugs = {}
     for name, text in files.items():
         slug = re.search(r'^slug: (.*)$', text, re.M).group(1)
@@ -587,14 +771,16 @@ def main():
             errors.append(f'{name}: стиль в строке — вид задаётся только в theme/assets/')
     if errors:
         print('\n'.join(errors))
-        sys.exit(f'ошибок: {len(errors)} — content/ не тронут')
+        sys.exit(f'ошибок: {len(errors)} — {os.path.basename(OUT)}/ не тронут')
     if '--check' in sys.argv:
         return print(f'проверено: страниц {len(files)}, компонентов {len(comps)}')
+    if EN:
+        files = under_base(files)
     shutil.rmtree(OUT, ignore_errors=True)
     os.makedirs(OUT)
     for name, text in sorted(files.items()):
         open(os.path.join(OUT, name), 'w', encoding='utf-8').write(text)
-    print(f'content/: страниц {len(files)}, компонентов {len(comps)}')
+    print(f'{os.path.basename(OUT)}/: страниц {len(files)}, компонентов {len(comps)}')
 
 
 main()

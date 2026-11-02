@@ -1,0 +1,58 @@
+version: 1
+
+fields:
+  required: ["type", "slug", "title"]
+  optional: [description, draft, order, noindex, kicker, badge, alternates]
+  defaults:
+    draft: false
+
+fm_schema:
+  order: number
+  draft: boolean
+  noindex: boolean
+
+# Английская версия (gen.py --lang en): те же типы, адреса разделов — латиницей по смыслу.
+# Все страницы рисует один шаблон: различаются они адресом.
+types:
+  home:
+    template: "home.html"
+    permalink: "/"
+    include_in: { sitemap: true, search: false }
+  page:
+    template: "page.html"
+    permalink: "/{{ slug }}/"
+    include_in: { sitemap: true, search: true }
+  part:            # компонент из реестра
+    template: "page.html"
+    permalink: "/inside/{{ slug }}/"
+    include_in: { sitemap: true, search: true }
+  use:             # вариант использования — «Для кого»
+    template: "page.html"
+    permalink: "/for/{{ slug }}/"
+    include_in: { sitemap: true, search: true }
+  howto:           # инструкция
+    template: "page.html"
+    permalink: "/how/{{ slug }}/"
+    include_in: { sitemap: true, search: true }
+
+links: []
+collections: {}
+
+sitemap:
+  include_types: ["home", "page", "part", "use", "howto"]
+  exclude_drafts: true
+
+search:
+  include_types: ["page", "part", "use", "howto"]
+  exclude_drafts: true
+  fields_boost: { title: 3, description: 2, body: 1 }
+  preview: { from: "description", max_len: 180 }
+
+validation:
+  single_page_of_type:
+    home: 1
+  duplicate_route: { action: "error" }
+  unknown_type: { action: "error" }
+  unique_slug: { action: "error" }
+  permalink_requires_slug: { action: "error" }
+  missing_template: { action: "error" }

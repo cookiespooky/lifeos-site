@@ -1,0 +1,193 @@
+{
+ "_": "Английские тексты частей системы для gen.py --lang en. ru_hash — отпечаток русского текста, с которого сделан перевод: изменился русский — сборка откажет, пока перевод не обновят. drop — части, которые на английский сайт не идут.",
+ "groups": {
+  "Входящие": "Incoming",
+  "Люди и дела": "People and work",
+  "Документы": "Documents",
+  "Сделки и деньги": "Deals and money",
+  "Идеи": "Ideas",
+  "Сайт": "Website",
+  "Телефон": "Phone",
+  "Соцсети": "Social media"
+ },
+ "uses": {
+  "поиск": "search",
+  "продажи": "sales",
+  "контроль": "control",
+  "идеи": "ideas"
+ },
+ "drop": [
+  "demand",
+  "articles"
+ ],
+ "components": {
+  "news": {
+   "ru_hash": "e85a0bf1c7",
+   "title": "Summary of what is new",
+   "summary": "Everything that came in during the day on Telegram and by email is gathered on one page.",
+   "how": "On request, the system reads new messages and emails, says who they are from and what they are about, and matches them with what is already recorded: the history of that person, open tasks, past correspondence. The result is one page: who is waiting for an answer, what has changed and what follows from it. The messages stay where they were — nothing is sent and nothing is marked as read.",
+   "human": "Asks for a summary when it is needed and reads the result. There is no schedule: the summary appears on request."
+  },
+  "telegram": {
+   "ru_hash": "2aaf5c8fae",
+   "title": "Messages from Telegram",
+   "summary": "Work chats and forwarded messages reach the system through a separate bot.",
+   "how": "The owner has a bot of their own. It is added to a work chat as a member, and the owner forwards personal messages to it — with a few words, if something should be done with the message. The system does not read private correspondence: it sees only what was forwarded to it. Everything received is stored encrypted, and only the owner has the key.",
+   "human": "Adds the bot to the right chats and forwards it what matters. The rest stays private."
+  },
+  "mail": {
+   "ru_hash": "dcab2ada38",
+   "title": "Email",
+   "summary": "New emails are read together with everything else that comes in; attachments are saved on request.",
+   "how": "The system opens the mailbox read-only: emails stay unread and nothing is deleted. Newsletters and notifications fold into one line, emails from people are read in full. An attachment can be saved next to the other files of the deal on request.",
+   "human": "Connects the mailbox once. The system can sort emails into folders, but only after a direct “yes”."
+  },
+  "ask": {
+   "ru_hash": "7d3fe1b9af",
+   "title": "Ask about anything of your own",
+   "summary": "You can ask about your people, work and records in plain words and get an answer with links.",
+   "how": "The question is written right where you work — on the computer or on the phone. The system searches everything you have recorded and answers with links to the records the answer comes from. Its answer is always framed apart from your words, so that later you never mix up what you wrote and what it wrote.",
+   "human": "Asks a question and decides what to keep from the answer: one tap turns the answer into tasks and records."
+  },
+  "documents": {
+   "ru_hash": "da61202c64",
+   "title": "Document from a template",
+   "summary": "A contract, an invoice or an annex is assembled from the document record and a template into a file ready to send.",
+   "how": "The document record says who the parties are, what it is about and for how much. Company details come from the records about organisations; the amount in words and the number are filled in automatically. Before assembling, the system checks that every field is filled and names what is missing — it does not make up what is not there.",
+   "human": "Says which document is needed and with whom. Checks the finished file before sending it."
+  },
+  "doc-template": {
+   "ru_hash": "d96e31d451",
+   "title": "Template from your own document",
+   "summary": "A template is made from a contract or an invoice you already use.",
+   "how": "You give a finished document. The system finds what changes from one time to the next — parties, dates, amounts, subject — and turns the rest into a template with your layout. After that, such documents are assembled with one request.",
+   "human": "Gives a sample and checks the resulting template once."
+  },
+  "ideas": {
+   "ru_hash": "3526066c79",
+   "title": "Idea with arguments for and against",
+   "summary": "Each idea has its own page that collects every argument for and against — with the date and whose it is.",
+   "how": "When an idea is discussed, each argument is written as one line: whose it is — yours, from the data or from the system — and what it rests on. Arguments against are looked for as hard as arguments for. Nothing is deleted: an argument that turned out wrong is struck through with the date and the reason.",
+   "human": "Thinks aloud and argues. Makes the decision when there are enough arguments."
+  },
+  "vector": {
+   "ru_hash": "1a64d85a06",
+   "title": "Focus and hypotheses",
+   "summary": "One place records where attention is now and which assumptions are being tested.",
+   "how": "The focus is a short record that only the owner changes. Each assumption has a deadline and a condition under which it counts as wrong. The system checks anything new against the focus and says when the data argue with it — but never changes the focus itself.",
+   "human": "Writes and changes the focus. Reads where something new disagrees with it."
+  },
+  "groups": {
+   "ru_hash": "8742f1fe3a",
+   "title": "Groups of records",
+   "summary": "Records gather into groups by meaning, and you can see what you think about most often.",
+   "how": "The system reads your thoughts and records, arranges them by closeness and draws the groups on a canvas. The canvas can be corrected by hand: move a record, rename a group — the correction is remembered and never overwritten. With a small number of records this is still unstable, and the groups do not always make sense.",
+   "human": "Looks at the canvas and corrects what is placed wrong."
+  },
+  "people": {
+   "ru_hash": "dda83cebb2",
+   "title": "Person page",
+   "summary": "Everyone you have business with gets a page: who they are and what happened with them, by date.",
+   "how": "When something important appears in the correspondence — agreed, promised, sent, asked — a dated line is added to the person’s page. Open tasks linked to them are shown there too. Phone numbers, addresses and company details are kept apart and never go into a conversation with the system.",
+   "human": "Opens the page before a conversation and sees the whole history in one place. Any line can be corrected by hand at any time."
+  },
+  "tasks": {
+   "ru_hash": "b7d46a33a3",
+   "title": "Tasks",
+   "summary": "All work sits in one list by topic, with a deadline and priority.",
+   "how": "A task is a plain line of text. The system adds a task when the correspondence shows that something needs doing, and closes it when the correspondence shows it is done. A task that links to a person also shows on their page. Long-closed tasks move to the archive by themselves.",
+   "human": "Sets and closes tasks — with a tick on the home page or in words. The list can always be read and edited as plain text."
+  },
+  "day": {
+   "ru_hash": "6195802ba5",
+   "title": "Day page",
+   "summary": "Each day has its own page with links to everything that appeared that day.",
+   "how": "A new record, a summary, a conversation — everything that came up today gets a link on the day page. It is a convenient place to start work: you see what is done and what to come back to. The calendar on the home page shows, day by day, whether there were records, tasks and payments.",
+   "human": "Opens the day and writes into it whatever seems useful. Nothing has to be filled in daily."
+  },
+  "home": {
+   "ru_hash": "cf602b372a",
+   "title": "Home page",
+   "summary": "One page shows what matters: tasks for today, the calendar, money, the state of your website and your services.",
+   "how": "The page is built from blocks. Which blocks to show and where to take the data from is written in one settings file shared by the computer and the phone. The numbers are not stored on the page itself: they are read from your records at the moment of display, so they cannot drift apart.",
+   "human": "Looks and taps: tick a task, open a day, refresh the data. Nothing needs to be typed in."
+  },
+  "calendar": {
+   "ru_hash": "164cb13649",
+   "title": "Calendars",
+   "summary": "Events from Google Calendar and Apple Calendar show in the day summary next to tasks and emails.",
+   "how": "The system reads calendars and shows events for today and the coming days, with repeats and reschedules. It writes nothing to the calendar.",
+   "human": "Gives the calendar address once. Creates events where they are used to."
+  },
+  "site": {
+   "ru_hash": "569c2bb6dd",
+   "title": "Website from your own records",
+   "summary": "The website is built from the same records as everything else and publishes itself after every edit.",
+   "how": "A website page is plain text. The system’s own engine turns it into a finished website, and it is published every time changes are saved. This works on the author’s website; a template that can be handed to another person as is, is still being made.",
+   "human": "Writes and edits pages as plain text. The domain and the hosting are their own."
+  },
+  "deals": {
+   "ru_hash": "e048856a7c",
+   "title": "Deals by stage",
+   "summary": "Each deal has its own page: client, stage, who runs it; everything that happened with it gathers there by itself.",
+   "how": "A payment, a delivery, an invoice, a contract — each fact has its own record with a link to the deal and to the source: a document or someone’s words. The deal page is built from them: revenue, payments, what has been shipped, the history by date. What the system does not know, it does not fill in, but says plainly: “profit is not calculated, such and such data is missing”.",
+   "human": "Forwards the correspondence and documents of the deal and answers questions when something does not add up."
+  },
+  "today": {
+   "ru_hash": "3a8e6b0a90",
+   "title": "The “Today” page",
+   "summary": "A list of what needs action: forgotten deals, overdue payments, unpaid invoices, missing documents.",
+   "how": "The page is recalculated from the deal records. A deal with no movement for longer than the set period goes to “forgotten”, a client payment past its due date goes to “overdue”, a deal without a required document goes to “missing”. The rules — how many days count as forgotten, which documents are required — are written in one place, in the settings.",
+   "human": "Opens the page and goes down the list. Sets the rules once."
+  },
+  "kinds": {
+   "ru_hash": "84976e3f98",
+   "title": "The business in one description",
+   "summary": "What kinds of records the business has, how they are linked and what the “Today” page shows — set by one description, not by programming.",
+   "how": "The description names the kinds of records — a deal, a payment, a document, a product — what each must contain and what it is linked to, plus the lists of the “Today” page by tab. From it the system checks the records, builds the page and gives the AI the outline of the business and everything linked to a single record. Totals over linked records — what has been paid on an invoice, which documents are missing — stay with the program.",
+   "human": "Tells how the business works and what they want to see every day. The AI proposes the description and the tabs; the person corrects it in their own words."
+  },
+  "money": {
+   "ru_hash": "61db9796df",
+   "title": "Money: plan and actual",
+   "summary": "How much came in and went out, how much you are owed and how much you owe, the goal for the year and how you are moving towards it.",
+   "how": "The page is calculated from the records of payments and invoices: income and spending by month against the plan, profit by deal, tax by quarter, money to receive and to pay. The currency stays as it is in the document. An amount known only from someone’s words is marked as such.",
+   "human": "Checks the figures against the bank and confirms what was recorded from words."
+  },
+  "staff-tasks": {
+   "ru_hash": "35af879c39",
+   "title": "Assignments for the team",
+   "summary": "An assignment is recorded with the person who does it and the deal it belongs to, and shows on the “Today” page.",
+   "how": "An assignment is a record: who does what, for which deal and by when. A question that needs a person’s answer is recorded the same way and stays open until it is answered. All assignments of one person show on their page.",
+   "human": "Sets assignments and closes them. For now the team gets them from the manager, not from the system."
+  },
+  "staff-app": {
+   "ru_hash": "ae26b96e85",
+   "title": "Screen for the team",
+   "summary": "A page in the browser and on the phone where a team member sees their deals, assignments and documents.",
+   "how": "The first version is built and tested on made-up data: a deal board, assignments, documents, money. It is now being reworked for the new way of recording deals and is switched off for the time being.",
+   "human": "Nothing yet: until the screen is ready, one person runs the deals."
+  },
+  "posting": {
+   "ru_hash": "03ef115c30",
+   "title": "Scheduled publishing",
+   "summary": "A post is written in advance, with a date and time, and goes out by itself to Threads, a Telegram channel and Instagram.",
+   "how": "Every few minutes the system looks into the posts folder. A post whose time has come goes out to the networks named in it; a long text goes to Threads as a thread, elsewhere as one post. A published post gets its address and moves to a separate folder. A post never goes out twice: if a network does not answer, the system does not retry blindly, but asks you to check whether it went out. A post more than half a day late does not go out by itself.",
+   "human": "Writes a post and sets the date, time and networks. Without a date it is a draft. Switches publishing on once."
+  },
+  "social-stats": {
+   "ru_hash": "ecfa561e5b",
+   "title": "Social media statistics",
+   "summary": "Each post shows how many people saw it, and posts that spread many times wider than usual are collected separately.",
+   "how": "The system collects posts and their figures from Threads, a Telegram channel and Instagram and shows what changed since last time: new posts and growth in views. A post that got five or ten times more than usual gets its own page with the text and the figures; these pages are used to see what such posts have in common and how they differ from the rest. Threads has worked since September; the other networks are written and waiting to be connected.",
+   "human": "Connects each network once. Asks for an analysis of the posts that took off when there are enough of them, and decides which conclusions to trust."
+  },
+  "phone": {
+   "ru_hash": "5d88e161c7",
+   "title": "Phone",
+   "summary": "The same records, tasks and home page — on the phone, synced with a button.",
+   "how": "The phone and the computer exchange changes directly when you press the button. Anything deleted goes to the trash for a month; if one record was changed on both sides, both versions are kept. What must not travel to the phone — the archive, other people’s data — is set by a list.",
+   "human": "Presses the sync button when both devices are nearby."
+  }
+ }
+}

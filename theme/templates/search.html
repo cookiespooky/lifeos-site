@@ -1,11 +1,11 @@
 <section class="page container">
   <header class="page__head">
-    <p class="eyebrow"><span>Поиск</span></p>
-    <h1>Поиск</h1>
+    <p class="eyebrow"><span>{{ or .Settings.search_label "Поиск" }}</span></p>
+    <h1>{{ or .Settings.search_label "Поиск" }}</h1>
   </header>
   <form class="search-form" action="{{ .BaseURL }}/search" method="get">
-    <input type="search" name="q" value="{{ .SearchQuery }}" placeholder="Что найти" minlength="2" />
-    <button type="submit">Найти</button>
+    <input type="search" name="q" value="{{ .SearchQuery }}" placeholder="{{ or .Settings.search_placeholder "Что найти" }}" minlength="2" />
+    <button type="submit">{{ or .Settings.search_button "Найти" }}</button>
   </form>
   <div class="search-results" data-search-results>
     {{- if .SearchItems }}
@@ -18,7 +18,7 @@
       {{- end }}
     </ul>
     {{- else }}
-    <p class="muted">Введите хотя бы два знака.</p>
+    <p class="muted">{{ or .Settings.search_short "Введите хотя бы два знака." }}</p>
     {{- end }}
   </div>
 </section>

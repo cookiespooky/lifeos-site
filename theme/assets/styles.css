@@ -107,6 +107,9 @@ h1, h2, h3, h4, p, ul, ol { margin: 0; }
 .btn:hover { border-color: var(--ink); color: var(--ink); }
 .btn--primary { background: var(--ink); border-color: var(--ink); color: var(--bg); }
 .btn--primary:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+/* кнопка в тексте страницы (демо): правило ссылок .prose a её не перекрашивает */
+.prose a.btn--primary, .prose a.btn--primary:hover { color: var(--bg); border-bottom: 1px solid var(--ink); }
+.prose a.btn--primary:hover { border-color: var(--accent); }
 .btn--small { padding: 8px 15px; font-size: 14px; background: transparent; border-color: var(--ink); }
 .btn--small:hover { background: var(--ink); color: var(--bg); }
 

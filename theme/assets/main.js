@@ -1,9 +1,16 @@
+// Слова, которые скрипт пишет сам, — по языку страницы (<html lang>, settings.lang в config*.yaml).
+var TXT = document.documentElement.lang === 'en'
+  ? { none: 'Nothing found.', more: 'Learn more ↓', forWhat: 'What for', needs: 'It takes:', group: 'Group', part: 'Part' }
+  : { none: 'Ничего не найдено.', more: 'Подробнее ↓', forWhat: 'Для чего', needs: 'Для этого нужны:', group: 'Группа', part: 'Часть' };
 (function () {
   var modal = document.querySelector('[data-search-modal]');
   var openBtn = document.querySelector('[data-search-open]');
   var closeBtns = document.querySelectorAll('[data-search-close]');
   var input = document.querySelector('[data-search-input]');
   var results = document.querySelector('[data-search-results]');
+  // адрес своей версии сайта: у английской, собранной под /en/, и индекс поиска, и пути из него — под /en
+  var searchForm = document.querySelector('.search-form');
+  var SITE_BASE = searchForm ? searchForm.getAttribute('action').replace(/\/search$/, '') : '';
 
   function openModal() {
     if (!modal) return;
@@ -31,12 +38,12 @@
   function renderItems(items) {
     if (!results) return;
     if (!items || items.length === 0) {
-      results.innerHTML = '<p class="muted">Ничего не найдено.</p>';
+      results.innerHTML = '<p class="muted">' + TXT.none + '</p>';
       return;
     }
     var html = '<ul>';
     items.forEach(function (item) {
-      html += '<li><a href="' + item.path + '">' + item.title + '</a>';
+      html += '<li><a href="' + SITE_BASE + item.path + '">' + item.title + '</a>';
       if (item.snippet) html += '<p class="muted">' + item.snippet + '</p>';
       html += '</li>';
     });
@@ -45,7 +52,7 @@
   }
 
   function fetchStaticIndex(query) {
-    return fetch('/search.json')
+    return fetch(SITE_BASE + '/search.json')
       .then(function (res) { return res.json(); })
       .then(function (data) {
         var q = query.toLowerCase();
@@ -111,7 +118,7 @@
     if (!title) { caption.textContent = caption.getAttribute('data-default'); return; }
     caption.appendChild(el('strong', title));
     if (text) caption.appendChild(document.createTextNode(text));
-    if (more) { var a = el('a', 'Подробнее ↓'); a.href = more; caption.appendChild(document.createElement('br')); caption.appendChild(a); }
+    if (more) { var a = el('a', TXT.more); a.href = more; caption.appendChild(document.createElement('br')); caption.appendChild(a); }
     (list || []).forEach(function (p) {
       var li = document.createElement('li'), a = el('a', p.getAttribute('data-title'));
       a.href = p.getAttribute('href');
@@ -140,7 +147,7 @@
     var use = chip.getAttribute('data-use');
     chips.forEach(function (c) { c.classList.toggle('is-on', c === chip); });
     var list = show(function (p) { return (' ' + p.getAttribute('data-uses') + ' ').indexOf(' ' + use + ' ') >= 0; });
-    say('Для чего', chip.getAttribute('data-caption'), 'Для этого нужны:', list);
+    say(TXT.forWhat, chip.getAttribute('data-caption'), TXT.needs, list);
   }
 
   function useNode(node) {
@@ -148,10 +155,10 @@
     if (node.classList.contains('graph__group')) {
       var id = node.getAttribute('data-group');
       show(function (p) { return p.getAttribute('data-group') === id; });
-      say('Группа', node.getAttribute('data-title'), node.getAttribute('data-caption'), null, more);
+      say(TXT.group, node.getAttribute('data-title'), node.getAttribute('data-caption'), null, more);
     } else {
       show(function (p) { return p === node; });
-      say('Часть', node.getAttribute('data-title'), node.getAttribute('data-caption'), null, more);
+      say(TXT.part, node.getAttribute('data-title'), node.getAttribute('data-caption'), null, more);
     }
   }
 

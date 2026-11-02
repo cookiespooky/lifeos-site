@@ -2,7 +2,7 @@ version: 1
 
 fields:
   required: ["type", "slug", "title"]
-  optional: [description, draft, order, noindex, kicker, badge]
+  optional: [description, draft, order, noindex, kicker, badge, alternates]
   defaults:
     draft: false
 
@@ -33,16 +33,20 @@ types:
     template: "page.html"
     permalink: "/kak/{{ slug }}/"
     include_in: { sitemap: true, search: true }
+  article:         # статья блога — src/blog/, ведёт `lifeos articles`
+    template: "page.html"
+    permalink: "/blog/{{ slug }}/"
+    include_in: { sitemap: true, search: true }
 
 links: []
 collections: {}
 
 sitemap:
-  include_types: ["home", "page", "part", "use", "howto"]
+  include_types: ["home", "page", "part", "use", "howto", "article"]
   exclude_drafts: true
 
 search:
-  include_types: ["page", "part", "use", "howto"]
+  include_types: ["page", "part", "use", "howto", "article"]
   exclude_drafts: true
   fields_boost: { title: 3, description: 2, body: 1 }
   preview: { from: "description", max_len: 180 }

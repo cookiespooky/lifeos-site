@@ -1,0 +1,55 @@
+name: Build and deploy the Life OS site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  NOTEPUB_REF: 8ef36a58c94dca5bd7f3f696c05a9201cd140d47   # тот же, что в scripts/build.sh
+
+jobs:
+  # Собирает из закоммиченного data/components.json: хранилища здесь нет (build.sh сам берёт реестр как есть).
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+          cache: false
+      - name: Install Notepub
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          GOBIN="$RUNNER_TEMP/bin" go install "github.com/cookiespooky/notepub/cmd/notepub@${NOTEPUB_REF}"
+      - name: Build
+        env:
+          NOTEPUB_BIN: ${{ runner.temp }}/bin/notepub
+        run: ./scripts/build.sh --no-vault
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

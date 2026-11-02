@@ -1,9 +1,10 @@
-# /etc/nginx/sites-available/lifeos-site — сайт Life OS: готовые страницы из dist/. __DOMAIN__ подставляет scripts/deploy.sh.
+# /etc/nginx/sites-available/lifeos-site(-en) — сайт Life OS: готовые страницы из dist/ (dist-en/). __DOMAIN__ и __DIR__
+# подставляет scripts/deploy.sh.
 server {
     listen 80;
     listen [::]:80;
     server_name __DOMAIN__;
-    root /srv/lifeos-site;
+    root __DIR__;
     location / { try_files $uri $uri/ =404; }
 }
 
@@ -16,7 +17,7 @@ server {
     # Строки ssl_certificate допишет certbot --nginx прямо в этот файл на сервере. Поэтому deploy.sh копирует
     # его только при первой установке.
 
-    root /srv/lifeos-site;
+    root __DIR__;
     index index.html;
     error_page 404 /404.html;
 

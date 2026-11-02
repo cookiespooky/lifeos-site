@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="{{ or .Settings.lang "ru" }}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,14 +9,14 @@
   <link rel="apple-touch-icon" href="{{ .BaseURL }}/apple-touch-icon.png" />
   <link rel="stylesheet" href="{{ .AssetsBase }}/tokens.css" />
   <link rel="stylesheet" href="{{ .AssetsBase }}/styles.css" />
-  <title>Страница не найдена</title>
+  <title>{{ or .Settings.notfound_title "Страница не найдена" }}</title>
 </head>
 <body>
   <main class="page container">
     <header class="page__head">
       <p class="eyebrow"><span>404</span></p>
-      <h1>Страница не найдена</h1>
-      <p class="deck">Возможно, она переехала. <a class="more" href="{{ .BaseURL }}">На главную →</a></p>
+      <h1>{{ or .Settings.notfound_title "Страница не найдена" }}</h1>
+      <p class="deck">{{ or .Settings.notfound_text "Возможно, она переехала." }} <a class="more" href="{{ .BaseURL }}">{{ or .Settings.notfound_home "На главную" }} →</a></p>
     </header>
   </main>
 </body>

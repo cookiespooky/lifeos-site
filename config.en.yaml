@@ -1,0 +1,78 @@
+# Английская версия сайта Life OS: scripts/gen.py --lang en собирает content-en/ из src/en/ и перевода реестра
+# src/en/components.json. С 2.11 живёт под путём /en/ того же сайта (раньше — en.lifeos.antonlozhkin.ru): build.sh кладёт
+# её сборку в dist/en/, а gen.py дописывает /en к ссылкам от корня.
+site:
+  id: lifeos-en
+  base_url: "https://lifeos.antonlozhkin.ru/en/"
+  title: "Life OS"
+  description: "Life OS — a working system for your own business"
+  language: "en"
+  default_og_image: "/og-en.png"              # static/og-en.png, рисует scripts/brand.py --lang en
+  media_base_url: "https://lifeos.antonlozhkin.ru/en/media/"
+  host: 127.0.0.1
+
+runtime:
+  mode: "prod"
+  dev:
+    base_url: "http://127.0.0.1:8085/en/"
+    media_base_url: "http://127.0.0.1:8085/en/media/"
+
+content:
+  source: "local"
+  local_dir: "./content-en"
+
+markdown:
+  html_policy: "unsafe"   # страницы собирает scripts/gen.py из своих же текстов: блоки приходят готовой разметкой
+
+og_type_by_type:
+  home: "website"
+  page: "website"
+  part: "article"
+  use: "article"
+  howto: "article"
+
+paths:
+  file_root: ./.notepub-en
+  artifacts_dir: ./.notepub-en/artifacts
+  snapshot_file: ./.notepub-en/snapshot/objects.json
+  cache_root: ./.notepub-en/cache
+
+theme:
+  dir: .
+  name: "theme"
+  templates_subdir: templates
+  assets_subdir: assets
+
+server:
+  listen: "127.0.0.1:8085"
+
+rules_path: ./rules.en.yaml
+
+# Слова шаблона. Русские значения по умолчанию стоят в самих шаблонах; здесь — все, что видит английский читатель.
+settings:
+  lang: "en"
+  font_preload: "onest-latin.woff2"
+  site_name: "Life OS"
+  contact_url: "https://t.me/cookiespooky"
+  contact_label: "Write to the author"
+  apply_label: "Get it"
+  nav_why: "Why Life OS"
+  nav_how: "How it works"
+  menu_label: "Menu"
+  menu_close: "Close the menu"
+  github_label: "Project on GitHub"
+  github_soon: "The code will be open soon"
+  cta_kicker: "Where to start"
+  cta_title: "Tell us which work matters most to you."
+  cta_text: "The author will tell you whether the system fits."
+  cta_button: "Message on Telegram"
+  footer_note: "These pages are built from the system's own descriptions"
+  search_label: "Search"
+  search_placeholder: "What to find"
+  search_button: "Find"
+  search_close: "Close"
+  search_short: "Type at least two characters."
+  notfound_title: "Page not found"
+  notfound_text: "It may have moved."
+  notfound_home: "To the home page"
+  # Без legal_note: сноска о Meta нужна только в России. Без metrika_id: счётчик Яндекса здесь не нужен.

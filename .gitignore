@@ -5,3 +5,13 @@
 /.bin/
 .DS_Store
 /dist-dev/
+/video/out/
+# английская версия: собирается из src/en/ — руками не правится
+/content-en/
+/dist-en/
+/dist-en-dev/
+/.notepub-en/
+# демо пульта: собирается `lifeos demo static demo-app` из кода Life OS — руками не правится
+/demo-app/
+# черновики страниц: в git не идут с 2.11 (репозиторий публичный), лежат только здесь
+/src/drafts/

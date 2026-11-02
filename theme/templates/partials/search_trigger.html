@@ -1,17 +1,17 @@
 <div class="search-trigger">
-  <button class="search-button" type="button" data-search-open>Поиск</button>
+  <button class="search-button" type="button" data-search-open>{{ or .Settings.search_label "Поиск" }}</button>
   <noscript>
-    <a class="search-link" href="{{ .BaseURL }}/search">Поиск</a>
+    <a class="search-link" href="{{ .BaseURL }}/search">{{ or .Settings.search_label "Поиск" }}</a>
   </noscript>
 </div>
 
 <div class="search-modal" data-search-modal aria-hidden="true">
   <div class="search-backdrop" data-search-close></div>
-  <div class="search-panel" role="dialog" aria-modal="true" aria-label="Поиск">
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="{{ or .Settings.search_label "Поиск" }}">
     <form class="search-form" action="{{ .BaseURL }}/search" method="get">
-      <input type="search" name="q" placeholder="Что найти" minlength="2" data-search-input />
-      <button type="submit">Найти</button>
-      <button type="button" class="ghost" data-search-close>Закрыть</button>
+      <input type="search" name="q" placeholder="{{ or .Settings.search_placeholder "Что найти" }}" minlength="2" data-search-input />
+      <button type="submit">{{ or .Settings.search_button "Найти" }}</button>
+      <button type="button" class="ghost" data-search-close>{{ or .Settings.search_close "Закрыть" }}</button>
     </form>
     <div class="search-results" data-search-results></div>
   </div>

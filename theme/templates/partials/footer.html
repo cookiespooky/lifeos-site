@@ -12,8 +12,9 @@
   <div class="container footer-inner">
     <span>{{ if .Settings.site_name }}{{ .Settings.site_name }}{{ else }}Life OS{{ end }}</span>
     <nav class="footer-nav">
-      <a href="{{ .BaseURL }}/#why">Почему Life OS</a>
-      <a href="{{ .BaseURL }}/#how">Как это работает</a>
+      <a href="{{ .BaseURL }}/#why">{{ or .Settings.nav_why "Почему Life OS" }}</a>
+      <a href="{{ .BaseURL }}/#how">{{ or .Settings.nav_how "Как это работает" }}</a>
+      {{- if .Settings.nav_demo }}<a href="{{ .BaseURL }}/demo/">{{ .Settings.nav_demo }}</a>{{ end }}
       {{- if .Settings.apply_label }}
       <a href="{{ .BaseURL }}/#start">{{ .Settings.apply_label }}</a>
       {{- end }}

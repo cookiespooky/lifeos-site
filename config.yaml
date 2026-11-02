@@ -27,6 +27,7 @@ og_type_by_type:
   part: "article"
   use: "article"
   howto: "article"
+  article: "article"
 
 paths:
   file_root: ./.notepub
