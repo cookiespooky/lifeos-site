@@ -598,6 +598,33 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 .band--dark .way__icon { background: var(--dark-ink); }
 .band--dark .way__text { color: var(--dark-ink-2); }
 .way--soon { opacity: 0.45; border-style: dashed; }   /* ссылки ещё нет */
+/* вариант на выбор («—» вместо адреса): карточка как у ссылки, но не реагирует на наведение */
+.way--still:hover { border-color: var(--line-2); }
+.band--dark .way--still:hover { border-color: var(--dark-line); background: transparent; }
+/* заголовок группы карточек ({{ways Заголовок}}): в полосе их может быть несколько */
+.ways__title { margin: 72px 0 0; font-size: var(--t-small); font-weight: var(--w-medium); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); }
+.band--dark .ways__title { color: var(--dark-ink-2); }
+.ways__title + .ways { margin-top: 20px; }
+@media (min-width: 640px) { .ways--pairs { grid-template-columns: repeat(2, 1fr); } }
+.band__inner > .band__title + .ways__title { margin-top: 60px; }
+.way__body { display: flex; flex-direction: column; gap: 12px; }
+.band__inner > .band__title + .ways-group > .ways__title:first-child { margin-top: 60px; }
+/* две группы рядом ({{ways … | split}} и следующая): колонки одной высоты, карточки делят её поровну */
+.ways-split { display: grid; gap: 48px var(--gap); margin-top: 60px; }
+.ways-split .ways__title { margin-top: 0; }
+.ways-split .ways-group { display: flex; flex-direction: column; }
+.ways-split .ways { grid-template-columns: 1fr; }
+@media (min-width: 960px) {
+  .ways-split { grid-template-columns: 1fr 1fr; }
+  .ways-split .ways { flex: 1; grid-auto-rows: 1fr; }   /* равная высота нужна, только когда колонки рядом */
+}
+/* компактные строки ({{ways … | rows}}): значок слева от текста */
+.ways--rows { gap: 12px; }
+.ways--rows .way { flex-direction: row; align-items: center; gap: 18px; padding: 18px 22px; }
+.ways--rows .way__icon { flex: none; width: 44px; height: 44px; margin: 0; }
+.ways--rows .way__icon img { width: 22px; height: 22px; }
+.ways--rows .way__body { gap: 4px; }
+.ways--rows .way__title { font-size: var(--t-h3); }
 .way--soon:hover, .band--dark .way--soon:hover { border-color: var(--line-2); background: transparent; }
 .band--dark .way--soon:hover { border-color: var(--dark-line); }
 

@@ -489,10 +489,18 @@ def benefits(lines, name):
     return '\n'.join(out + ['</div>'])
 
 
-def ways(lines, name):
+def ways(lines, name, title=''):
     """Способы получить — крупными ссылками со значком: «- Заголовок: текст | файл из theme/assets/logos | адрес».
-    Вместо адреса слово «скоро» — карточка бледная и без ссылки."""
-    out = ['<div class="ways">']
+    Вместо адреса слово «скоро» — карточка бледная и без ссылки; «—» — обычная карточка без ссылки (вариант на
+    выбор, а не действие). `{{ways Заголовок}}` ставит над карточками заголовок группы: групп в полосе может быть
+    несколько. После заголовка через « | » — вид группы: `split` — встать в колонку слева, рядом со следующей
+    группой (её собирает home()), `rows` — компактные строки (значок слева от текста)."""
+    title, _, opt = title.partition(' | ')
+    opt = opt.split()
+    items = [l for l in lines if l.startswith('- ')]
+    cls = ['ways'] + (['ways--rows'] if 'rows' in opt else ['ways--pairs'] if len(items) == 4 and not opt else [])
+    out = [f'<div class="ways-group{" ways-group--split" if "split" in opt else ""}">'] \
+        + ([f'<h3 class="ways__title">{esc(typo(title.strip()))}</h3>'] if title.strip() else []) + [f'<div class="{" ".join(cls)}">']
     for l in [l for l in lines if l.startswith('- ')]:
         parts = [x.strip() for x in l[2:].split(' | ')]
         head, _, text = parts[0].partition(': ')
@@ -502,11 +510,13 @@ def ways(lines, name):
         if not os.path.exists(os.path.join(ROOT, 'theme', 'assets', 'logos', parts[1])):
             errors.append(f'{name}: нет значка theme/assets/logos/{parts[1]} для «{head}»')
         soon = parts[2] == T['soon']                    # ссылки ещё нет: карточка бледная и не нажимается
-        tag, end = ('<div class="way way--soon">', '</div>') if soon else (f'<a class="way" href="{esc(parts[2])}">', '</a>')
-        arrow = '' if soon else ' <span aria-hidden="true">→</span>'
+        still = parts[2] == '—'                         # вариант на выбор: обычная карточка, но не ссылка
+        tag, end = (('<div class="way way--soon">', '</div>') if soon else ('<div class="way way--still">', '</div>') if still
+                    else (f'<a class="way" href="{esc(parts[2])}">', '</a>'))
+        arrow = '' if soon or still else ' <span aria-hidden="true">→</span>'
         out.append(f'{tag}<span class="way__icon"><img src="/assets/logos/{esc(parts[1])}" alt="" width="28" height="28" loading="lazy"></span>'
-                   f'<span class="way__title">{esc(typo(head))}{arrow}</span><span class="way__text">{esc(text)}</span>{end}')
-    return '\n'.join(out + ['</div>'])
+                   f'<span class="way__body"><span class="way__title">{esc(typo(head))}{arrow}</span><span class="way__text">{esc(text)}</span></span>{end}')
+    return '\n'.join(out + ['</div>', '</div>'])
 
 
 # ---------- главная ----------
@@ -552,8 +562,8 @@ def home(fm, body, name, marks, graph_html):
                 block = integrations(lines[1:], name)
             elif lines[0].strip() == '{{benefits}}':
                 block = benefits(lines[1:], name)
-            elif lines[0].strip() == '{{ways}}':
-                block = ways(lines[1:], name)
+            elif re.fullmatch(r'\{\{ways(?: [^}]+)?\}\}', lines[0].strip()):
+                block = ways(lines[1:], name, lines[0].strip()[7:-2].strip())
             elif all(l.startswith('- ') and LINK.fullmatch(l[2:].strip()) for l in lines):
                 block = actions([LINK.fullmatch(l[2:].strip()).groups() for l in lines])
             elif len(lines) == 1 and LINK.fullmatch(block.strip()):
@@ -563,6 +573,8 @@ def home(fm, body, name, marks, graph_html):
                 block = marks['cols'](apps_by_group(lines[1:], name))
             elif block.strip() in ('{{uses}}', '{{groups}}', '{{usetabs}}'):
                 block = marks[block.strip()[2:-2]]
+            if blocks and blocks[-1].startswith('<div class="ways-group ways-group--split">') and block.startswith('<div class="ways-group'):
+                block = '<div class="ways-split">\n' + blocks.pop() + '\n' + block + '\n</div>'
             blocks.append(block)
         head = [f'<section class="{" ".join(cls)}"' + (f' id="{sid}"' if sid else '') + '>', '<div class="band__inner">', f'<p class="eyebrow"><span>{esc(label)}</span></p>']
         if title:

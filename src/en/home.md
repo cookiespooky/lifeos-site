@@ -89,8 +89,18 @@ You can ask about your people, work and records in plain words — and get an an
 
 ## How to get it {#start .dark}
 
-### Two ways.
+### Where the system runs and how you work with it
 
-{{ways}}
+{{ways Where it runs | split}}
+- On your own computer: Your records and all the work always stay on one device. | laptop.svg | —
+- On a server: At home, in the office or in the cloud. The system runs all the time, and you can open it from any device. | server.svg | —
+
+{{ways How you work with it | rows}}
+- Dashboard: A page in the browser: what needs attention today, work, money, people and tasks. | dashboard.svg | —
+- Obsidian: The same records as plain files in Obsidian — with the dashboard and questions to the system right inside a record. | obsidian.svg | —
+- Telegram bot and mini app: You forward messages and documents to the bot, ask it questions, and open the dashboard right inside Telegram. | telegram.svg | —
+- VS Code or terminal: If you already work with AI in an editor or a terminal, the system plugs in there too. | vscode.svg | —
+
+{{ways Where to start}}
 - Set up for you: Tell us about your recurring work and routine — we will set the system up for your business. | telegram.svg | https://t.me/cookiespooky
 - Source code: The code will be open soon. | github.svg | soon
