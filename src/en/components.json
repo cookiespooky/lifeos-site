@@ -183,10 +183,10 @@
    "human": "Connects each network once. Asks for an analysis of the posts that took off when there are enough of them, and decides which conclusions to trust."
   },
   "phone": {
-   "ru_hash": "5d88e161c7",
+   "ru_hash": "1dd5be9ffc",
    "title": "Phone",
    "summary": "The same records, tasks and home page — on the phone, synced with a button.",
-   "how": "The phone and the computer exchange changes directly when you press the button. Anything deleted goes to the trash for a month; if one record was changed on both sides, both versions are kept. What must not travel to the phone — the archive, other people’s data — is set by a list.",
+   "how": "The phone and the computer exchange changes directly when you press the button. Anything deleted goes to the trash for a month; if one record was changed on both sides, both versions are kept. What must not travel to the phone — the archive, other people’s data — is set by a list. The dashboard in the phone’s browser keeps a copy of its last state: offline it opens with the old data, new records and edits wait on the phone and go out by themselves when the connection returns; a record changed on the computer in the meantime is not overwritten.",
    "human": "Presses the sync button when both devices are nearby."
   }
  }

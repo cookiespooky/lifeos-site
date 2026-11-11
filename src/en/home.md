@@ -3,7 +3,7 @@ type: home
 slug: life-os
 title: "Life OS"
 description: "All your work in one place: messages, email, documents, tasks, ideas and money are linked into one system you can simply ask."
-kicker: "A working system for your own business"
+kicker: "A process management ecosystem"
 hero_title: "All your work in one place"
 hero_sub: "No manual input. Just ask"
 ---
