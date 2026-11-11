@@ -294,3 +294,23 @@ var TXT = document.documentElement.lang === 'en'
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') toggle.checked = false; });
 })();
 
+/* Переход на другой сайт — в новой вкладке. Другой сайт — другой домен или другой репозиторий на этом же домене
+   (на antonlozhkin.ru под /<имя>/ лежат GitHub Pages других репозиториев: гайд по Obsidian, документация Notepub…).
+   Решается в момент клика, поэтому работает и для ссылок, которые появились позже (ответы чата, поиск). */
+(function () {
+  var BASE = '/';                 // где этот сайт лежит на своём домене
+  var FOREIGN = [];  // первые части пути, которые на этом домене принадлежат другим репозиториям
+  function own(u) {
+    if (u.origin !== location.origin || u.pathname.indexOf(BASE) !== 0) return false;
+    return FOREIGN.indexOf(u.pathname.slice(BASE.length).split('/')[0]) < 0;
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!a || a.hasAttribute('download')) return;
+    var u;
+    try { u = new URL(a.getAttribute('href'), location.href); } catch (err) { return; }
+    if (!/^https?:$/.test(u.protocol) || own(u)) return;
+    a.target = '_blank';
+    if (!/\bnoopener\b/.test(a.rel)) a.rel = (a.rel ? a.rel + ' ' : '') + 'noopener';
+  }, true);
+})();
