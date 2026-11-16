@@ -11,6 +11,8 @@ keywords:
 cta_service: chto-vnutri
 date: '2026-10-31'
 draft: true
+visual: "/assets/visuals/kontekst-inzhiniring.svg"
+og_image: "/assets/visuals/kontekst-inzhiniring.png"
 ---
 Контекст-инжиниринг для меня свёлся к одному правилу: в системный промпт идёт только то, что не меняется, а всё
 меняющееся уходит в сообщения. По этому правилу я перестроил сессию с моделью в Life OS 14 октября, и вторая сессия

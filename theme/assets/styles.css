@@ -649,3 +649,7 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 .search-results li { padding: 12px 0; border-top: 1px solid var(--line); }
 .search-results a { font-weight: var(--w-medium); }
 .search-results p { font-size: var(--t-small); margin-top: 4px; }
+
+/* Схема статьи блога под заголовком — SVG из `lifeos articles draw` (поле visual); фон и сетка уже в самой картинке. */
+.page__visual { max-width: var(--text); margin: 0 0 40px; }
+.page__visual img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: var(--radius); }

@@ -8,6 +8,9 @@
     <p class="deck">{{ .Page.Description }}</p>
     {{- end }}
   </header>
+  {{- if .FM.visual }}
+  <figure class="page__visual"><img src="{{ .FM.visual }}" alt="Схема к статье «{{ .Page.Title }}»" width="1200" height="600" /></figure>
+  {{- end }}
   <div class="prose">
     {{ .Body }}
   </div>

@@ -2,7 +2,7 @@ version: 1
 
 fields:
   required: ["type", "slug", "title"]
-  optional: [description, draft, order, noindex, kicker, badge, alternates]
+  optional: [description, draft, order, noindex, kicker, badge, alternates, og_image, visual]   # og_image, visual — картинка статьи блога (`lifeos articles draw`)
   defaults:
     draft: false
 

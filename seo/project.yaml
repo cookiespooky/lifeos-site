@@ -34,3 +34,10 @@ rules: |
   - Код и имена файлов — только когда без них непонятно; команда `lifeos …` уместна, путь к файлу хранилища — нет.
 stop: ["лучший", "лучшие", "№1", "номер один", "100%", "гарантируем результат", "революц", "волшебн"]
 stop_vault: [timeline_stop] # имена заказчиков из life/lifeos.yaml
+# Картинка статьи: `lifeos articles visual <slug>` → seo/visuals/<slug>.yaml (пишет Claude) → `lifeos articles draw <slug>`:
+# SVG над текстом и PNG для og:image. gen.py передаёт поля visual и og_image из шапки статьи в сборку.
+visual:
+  dir: theme/assets/visuals     # отдаётся как /assets/visuals/
+  url: /assets/visuals/
+  kicker: "Блог Life OS"
+  fonts_css: theme/assets/tokens.css   # Onest и JetBrains Mono встраиваются в SVG; цвета — по умолчанию те же, что в tokens.css

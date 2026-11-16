@@ -143,10 +143,10 @@ def split(text, name):
     return fm, text[m.end():]
 
 
-def page(kind, slug, title, description, body, order=None, kicker=None, badge=None):
+def page(kind, slug, title, description, body, order=None, kicker=None, badge=None, extra=None):
     q = lambda s: json.dumps(s, ensure_ascii=False)
     head = ['---', f'type: {kind}', f'slug: {slug}', f'title: {q(title)}', f'description: {q(description)}']
-    head += [f'{k}: {q(v)}' for k, v in (('kicker', kicker), ('badge', badge)) if v]
+    head += [f'{k}: {q(v)}' for k, v in (('kicker', kicker), ('badge', badge), *(extra or {}).items()) if v]
     if order is not None:
         head.append(f'order: {order}')
     return '\n'.join(head + ['---', '', body.strip(), ''])
@@ -754,7 +754,8 @@ def main():
     for fm, body, draft in posts:
         kicker = f'{T["blog"]} · {date_ru(fm["date"])}' + (f' · {T["draft"]}' if draft else '')
         files[f'blog-{fm.get("slug", "")}.md'] = page('article', fm.get('slug', ''), fm.get('title', ''),
-                                                       fm.get('description', ''), body, kicker=kicker)
+                                                       fm.get('description', ''), body, kicker=kicker,
+                                                       extra={k: fm.get(k) for k in ('visual', 'og_image')})   # картинка статьи — `lifeos articles draw`
     if posts:
         files['blog.md'] = page('page', 'blog', T['blog'], T['blog_desc'], rows_dated(
             [(None, fm['title'], f'/blog/{fm["slug"]}/', f'{date_ru(fm["date"])} · {fm.get("description", "")}')
