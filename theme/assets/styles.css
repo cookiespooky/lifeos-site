@@ -620,6 +620,8 @@ a.row__title:hover, .row__title a:hover { color: var(--accent); }
 }
 /* компактные строки ({{ways … | rows}}): значок слева от текста */
 .ways--rows { gap: 12px; }
+@media (min-width: 640px) { .ways--rows { grid-template-columns: repeat(2, 1fr); } }   /* ряды по две: 2 и 4 карточки ложатся ровно */
+.ways-group + h3 { margin-top: 72px; }   /* обычный подзаголовок после групп карточек */
 .ways--rows .way { flex-direction: row; align-items: center; gap: 18px; padding: 18px 22px; }
 .ways--rows .way__icon { flex: none; width: 44px; height: 44px; margin: 0; }
 .ways--rows .way__icon img { width: 22px; height: 22px; }

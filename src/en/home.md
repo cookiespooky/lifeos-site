@@ -91,7 +91,7 @@ You can ask about your people, work and records in plain words — and get an an
 
 ### Where the system runs and how you work with it
 
-{{ways Where it runs | split}}
+{{ways Where it runs | rows}}
 - On your own computer: Your records and all the work always stay on one device. | laptop.svg | —
 - On a server: At home, in the office or in the cloud. The system runs all the time, and you can open it from any device. | server.svg | —
 
@@ -101,6 +101,8 @@ You can ask about your people, work and records in plain words — and get an an
 - Telegram bot and mini app: You forward messages and documents to the bot, ask it questions, and open the dashboard right inside Telegram. | telegram.svg | —
 - VS Code or terminal: If you already work with AI in an editor or a terminal, the system plugs in there too. | vscode.svg | —
 
-{{ways Where to start}}
-- Set up for you: Tell us about your recurring work and routine — we will set the system up for your business. | telegram.svg | https://t.me/cookiespooky
-- Source code: The code will be open soon. | github.svg | soon
+### Where to start
+
+The code will be open soon. If you would like to test the system on your own projects, write to me in Telegram.
+
+- [Write in Telegram](https://t.me/cookiespooky)
